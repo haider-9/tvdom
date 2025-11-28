@@ -4,8 +4,16 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import type { PageData } from './$types';
+	import { goto } from '$app/navigation';
 
 	let { data }: { data: PageData } = $props();
+
+	async function navigateToPage(pageNum: number) {
+		await goto(`/people?page=${pageNum}`, {
+			invalidateAll: true,
+			noScroll: false
+		});
+	}
 </script>
 
 <svelte:head>
@@ -28,28 +36,29 @@
 
 	<main class="py-12">
 		<section class="mb-16">
-			<div class="container mx-auto px-4 md:px-8">
+			<div class="container mx-auto px-4 md:px-8 space-y-8 @container">
 				{#if data.people.length === 0}
 					<p class="text-muted-foreground text-center py-12">No people to show right now.</p>
 				{:else}
-					<div class="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-						{#each data.people as person}
-							<PersonCard {person} />
-						{/each}
-					</div>
+					{#key data.currentPage}
+						<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
+							{#each data.people as person (person.id)}
+								<PersonCard {person} />
+							{/each}
+						</div>
+					{/key}
 				{/if}
 
 				{#if data.totalPages > 1}
 					<div class="flex justify-center items-center gap-4 mt-12">
 						{#if data.currentPage > 1}
-							<a href={`/people?page=${data.currentPage - 1}`} data-sveltekit-reload>
-								<Button 
-									variant="outline" 
-									class="px-6 py-6"
-								>
-									<ChevronLeft/> Previous
-								</Button>
-							</a>
+							<Button 
+								variant="outline" 
+								class="px-6 py-6"
+								onclick={() => navigateToPage(data.currentPage - 1)}
+							>
+								<ChevronLeft/> Previous
+							</Button>
 						{/if}
 
 						<Badge variant="secondary" class="px-6 py-3 text-base">
@@ -57,14 +66,13 @@
 						</Badge>
 
 						{#if data.currentPage < data.totalPages && data.currentPage < 500}
-							<a href={`/people?page=${data.currentPage + 1}`} data-sveltekit-reload>
-								<Button 
-									variant="outline" 
-									class="px-6 py-6"
-								>
-									Next <ChevronRightIcon/>
-								</Button>
-							</a>
+							<Button 
+								variant="outline" 
+								class="px-6 py-6"
+								onclick={() => navigateToPage(data.currentPage + 1)}
+							>
+								Next <ChevronRightIcon/>
+							</Button>
 						{/if}
 					</div>
 				{/if}

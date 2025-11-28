@@ -47,7 +47,7 @@
 			</h1>
 
 			{#if data.results.length > 0}
-				<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4  gap-6">
+				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 					{#each data.results as item}
 						{#if item.media_type === 'movie' || item.media_type === 'tv'}
 							<MediaCard media={item} type={item.media_type} />

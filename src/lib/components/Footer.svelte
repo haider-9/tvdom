@@ -2,6 +2,7 @@
 	import { Film, Github, Heart, Twitter, Mail, ArrowUp } from 'lucide-svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
+	import logoUrl from '$lib/assets/logo.png';
 
 	let email = '';
 	let subscribed = false;
@@ -23,7 +24,7 @@
 			<!-- Brand -->
 			<div>
 				<div class="flex items-center gap-2 mb-3">
-					<Film class="w-8 h-8 text-primary" />
+					<img src={logoUrl} alt="TVDom logo" class="w-8 h-8 text-primary" />
 					<span class="text-2xl font-bold text-foreground">TVDom</span>
 				</div>
 				<p class="text-muted-foreground mb-4">

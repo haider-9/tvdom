@@ -1,4 +1,16 @@
-import { getDetails, getCredits, getVideos, getSimilar, getImages } from '$lib/tmdb';
+import {
+	getDetails,
+	getCredits,
+	getVideos,
+	getSimilar,
+	getImages,
+	getWatchProviders,
+	getReleaseDates,
+	getContentRatings,
+	getReviews,
+	getKeywords,
+	getRecommendations
+} from '$lib/tmdb';
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
@@ -11,13 +23,32 @@ export const load: PageServerLoad = async ({ params }) => {
 
 	try {
 		const mediaId = parseInt(id);
-		const [details, credits, videos, similar, images] = await Promise.all([
+		const [
+			details,
+			credits,
+			videos,
+			similar,
+			images,
+			watchProviders,
+			reviews,
+			keywords,
+			recommendations,
+			releaseOrContentRatings
+		] = await Promise.all([
 			getDetails(type, mediaId),
 			getCredits(type, mediaId),
 			getVideos(type, mediaId),
 			getSimilar(type, mediaId),
-			getImages(type, mediaId)
+			getImages(type, mediaId),
+			getWatchProviders(type, mediaId),
+			getReviews(type, mediaId),
+			getKeywords(type, mediaId),
+			getRecommendations(type, mediaId),
+			type === 'movie' ? getReleaseDates(mediaId) : getContentRatings(mediaId)
 		]);
+
+		const releaseInfo = type === 'movie' ? releaseOrContentRatings : null;
+		const contentRatings = type === 'tv' ? releaseOrContentRatings : null;
 
 		return {
 			details,
@@ -25,6 +56,12 @@ export const load: PageServerLoad = async ({ params }) => {
 			videos,
 			similar,
 			images,
+			watchProviders,
+			reviews,
+			keywords,
+			recommendations,
+			releaseInfo,
+			contentRatings,
 			type
 		};
 	} catch (err) {

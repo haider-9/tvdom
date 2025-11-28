@@ -44,6 +44,50 @@ export async function getSimilar(mediaType: 'movie' | 'tv', id: number, page: nu
 	return fetchFromTMDB(`/${mediaType}/${id}/similar?page=${page}`);
 }
 
+export async function getRecommendations(mediaType: 'movie' | 'tv', id: number, page: number = 1) {
+	return fetchFromTMDB(`/${mediaType}/${id}/recommendations?page=${page}`);
+}
+
+export async function getWatchProviders(mediaType: 'movie' | 'tv', id: number) {
+	return fetchFromTMDB(`/${mediaType}/${id}/watch/providers`);
+}
+
+export async function getSeasonDetails(tvId: number, seasonNumber: number) {
+	return fetchFromTMDB(`/tv/${tvId}/season/${seasonNumber}`);
+}
+
+export async function getSeasonCredits(tvId: number, seasonNumber: number) {
+	return fetchFromTMDB(`/tv/${tvId}/season/${seasonNumber}/credits`);
+}
+
+export async function getEpisodeDetails(tvId: number, seasonNumber: number, episodeNumber: number) {
+	return fetchFromTMDB(`/tv/${tvId}/season/${seasonNumber}/episode/${episodeNumber}`);
+}
+
+export async function getEpisodeCredits(tvId: number, seasonNumber: number, episodeNumber: number) {
+	return fetchFromTMDB(`/tv/${tvId}/season/${seasonNumber}/episode/${episodeNumber}/credits`);
+}
+
+export async function getEpisodeImages(tvId: number, seasonNumber: number, episodeNumber: number) {
+	return fetchFromTMDB(`/tv/${tvId}/season/${seasonNumber}/episode/${episodeNumber}/images`);
+}
+
+export async function getReleaseDates(id: number) {
+	return fetchFromTMDB(`/movie/${id}/release_dates`);
+}
+
+export async function getContentRatings(id: number) {
+	return fetchFromTMDB(`/tv/${id}/content_ratings`);
+}
+
+export async function getReviews(mediaType: 'movie' | 'tv', id: number, page: number = 1) {
+	return fetchFromTMDB(`/${mediaType}/${id}/reviews?page=${page}`);
+}
+
+export async function getKeywords(mediaType: 'movie' | 'tv', id: number) {
+	return fetchFromTMDB(`/${mediaType}/${id}/keywords`);
+}
+
 export async function searchMulti(query: string, page: number = 1) {
 	return fetchFromTMDB(`/search/multi?query=${encodeURIComponent(query)}&page=${page}`);
 }
