@@ -1,10 +1,12 @@
 import { getPopular, getGenres, getTrending, getTopRated, getAiringToday } from '$lib/tmdb';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, setHeaders }) => {
 	const page = parseInt(url.searchParams.get('page') || '1');
 	const section = url.searchParams.get('section') || 'popular';
-
+	setHeaders({
+		'cache-control': 'no-store, no-cache, must-revalidate, max-age=0'
+	});
 	try {
 		const [popularData, trendingData, topRatedData, airingTodayData, genresData] = await Promise.all([
 			getPopular('tv', 1),

@@ -22,13 +22,13 @@
 </script>
 
 <a href="/{type}/{media.id}" class="group block">
-	<Card.Root class="relative overflow-hidden rounded-3xl w-full lg:w-80 bg-card/40 border border-border/60 transition-colors duration-300">
+	<Card.Root class="relative overflow-hidden rounded-3xl w-full bg-card/40 border border-border/60 transition-colors duration-300">
 		<!-- Full-card image -->
 		<div class="relative h-80 md:h-96 w-full">
 			<img
 				src={backdropUrl}
 				alt={title}
-				class="w-full h-full object-cover object-center transition-transform duration-50 group-hover:scale-110"
+				class="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-110"
 				loading="lazy"
 			/>
 

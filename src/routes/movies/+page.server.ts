@@ -1,21 +1,15 @@
 import { getPopular, getGenres, getTrending, getTopRated, getUpcoming, getNowPlaying } from '$lib/tmdb';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, setHeaders }) => {
 	const page = parseInt(url.searchParams.get('page') || '1');
 	const section = url.searchParams.get('section') || 'popular';
 
+	// Prevent caching
+	setHeaders({
+		'cache-control': 'no-store, no-cache, must-revalidate, max-age=0'
+	});
 	try {
-		const [popularData, trendingData, topRatedData, upcomingData, nowPlayingData, genresData] = await Promise.all([
-			getPopular('movie', 1),
-			getTrending('movie', 'week'),
-			getTopRated('movie', 1),
-			getUpcoming(1),
-			getNowPlaying(1),
-			getGenres('movie')
-		]);
-
-		// Get the main section data based on selection
 		let mainData;
 		switch (section) {
 			case 'trending':
@@ -34,13 +28,10 @@ export const load: PageServerLoad = async ({ url }) => {
 				mainData = await getPopular('movie', page);
 		}
 
+		const genresData = await getGenres('movie');
+
 		return {
 			movies: mainData.results || [],
-			popular: popularData.results?.slice(0, 10) || [],
-			trending: trendingData.results?.slice(0, 10) || [],
-			topRated: topRatedData.results?.slice(0, 10) || [],
-			upcoming: upcomingData.results?.slice(0, 10) || [],
-			nowPlaying: nowPlayingData.results?.slice(0, 10) || [],
 			genres: genresData.genres || [],
 			currentPage: page,
 			totalPages: mainData.total_pages || 0,
@@ -50,11 +41,6 @@ export const load: PageServerLoad = async ({ url }) => {
 		console.error('Error loading movies:', error);
 		return {
 			movies: [],
-			popular: [],
-			trending: [],
-			topRated: [],
-			upcoming: [],
-			nowPlaying: [],
 			genres: [],
 			currentPage: 1,
 			totalPages: 0,

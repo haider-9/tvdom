@@ -207,7 +207,7 @@
 				</div>
 
 				<div class="overflow-x-auto scrollbar-hide -mx-4 md:mx-0">
-					<div class="flex gap-16 px-4 md:px-0 pb-4">
+					<div class="flex gap-4 px-4 md:px-0 pb-4">
 						{#each movieCredits.slice(0, 20) as credit}
 							<div class="flex-shrink-0 w-[280px]">
 								<MediaCard media={credit} type="movie" />
@@ -228,7 +228,7 @@
 				</div>
 
 				<div class="overflow-x-auto scrollbar-hide -mx-4 md:mx-0">
-					<div class="flex gap-16 px-4 md:px-0 pb-4">
+					<div class="flex gap-4 px-4 md:px-0 pb-4">
 						{#each tvCredits.slice(0, 20) as credit}
 							<div class="flex-shrink-0 w-[280px]">
 								<MediaCard media={credit} type="tv" />
