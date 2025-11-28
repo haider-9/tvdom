@@ -3,12 +3,39 @@
 	import MediaCard from '$lib/components/MediaCard.svelte';
 	import Hero from '$lib/components/Hero.svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { generateSEOTags } from '$lib/seo';
+	import { page } from '$app/stores';
 
 	let { data }: { data: PageData } = $props();
+
+	const seoConfig = generateSEOTags({
+		title: 'TVDom - Your Ultimate TV & Movie Destination',
+		description: 'Discover and explore movies, TV shows, and the people who make them. Browse trending content, read reviews, and find your next favorite watch.',
+		url: $page.url.pathname,
+		keywords: ['movies', 'TV shows', 'entertainment', 'streaming', 'reviews', 'trending movies', 'popular TV shows']
+	});
 </script>
 
 <svelte:head>
-	<title>TVDom - Your Ultimate TV & Movie Destination</title>
+	<title>{seoConfig.title}</title>
+	<meta name="description" content={seoConfig.description} />
+	<meta name="keywords" content={seoConfig.keywords} />
+	
+	<!-- Open Graph -->
+	<meta property="og:title" content={seoConfig.title} />
+	<meta property="og:description" content={seoConfig.description} />
+	<meta property="og:image" content={seoConfig.image} />
+	<meta property="og:url" content={seoConfig.url} />
+	<meta property="og:type" content={seoConfig.type} />
+	
+	<!-- Twitter Card -->
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content={seoConfig.title} />
+	<meta name="twitter:description" content={seoConfig.description} />
+	<meta name="twitter:image" content={seoConfig.image} />
+	
+	<!-- Canonical URL -->
+	<link rel="canonical" href={seoConfig.url} />
 </svelte:head>
 
 <div class="min-h-screen">

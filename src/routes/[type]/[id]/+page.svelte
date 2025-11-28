@@ -20,6 +20,8 @@
 	import { Button } from "$lib/components/ui/button";
 	import MediaCard from "$lib/components/MediaCard.svelte";
 	import type { PageData } from "./$types";
+	import { generateSEOTags, generateStructuredData } from "$lib/seo";
+	import { page } from "$app/stores";
 
 	let { data }: { data: PageData } = $props();
 
@@ -138,10 +140,79 @@
 		if (e.key === "ArrowLeft") prevImage();
 		if (e.key === "ArrowRight") nextImage();
 	}
+
+	// SEO Configuration
+	const seoDescription = details.overview || `Discover ${title}, a ${type === "movie" ? "movie" : "TV show"} released in ${releaseDate ? new Date(releaseDate).getFullYear() : "various years"}. ${details.genres?.map((g: any) => g.name).join(", ") || ""}`;
+	const seoImage = backdropUrl || posterUrl || "";
+	const seoKeywords = [
+		title,
+		...(details.genres?.map((g: any) => g.name) || []),
+		...(keywordList.slice(0, 5).map((k: any) => k.name) || []),
+		mediaType === "movie" ? "movies" : "TV shows",
+		"entertainment"
+	];
+
+	const seoConfig = generateSEOTags({
+		title: `${title} (${releaseDate ? new Date(releaseDate).getFullYear() : ""})`,
+		description: seoDescription.substring(0, 160),
+		image: seoImage,
+		type: mediaType === "movie" ? "video.movie" : "video.tv_show",
+		url: $page.url.pathname,
+		keywords: seoKeywords,
+		publishedTime: releaseDate || undefined
+	});
+
+	const structuredData = generateStructuredData({
+		type: mediaType === "movie" ? "Movie" : "TVSeries",
+		data: { ...details, credits }
+	});
+
+	const breadcrumbs = [
+		{ name: "Home", url: "/" },
+		{ name: mediaType === "movie" ? "Movies" : "TV Shows", url: `/${mediaType}` },
+		{ name: title, url: $page.url.pathname }
+	];
+	const breadcrumbData = generateStructuredData({
+		type: "BreadcrumbList",
+		data: breadcrumbs
+	});
 </script>
 
 <svelte:head>
-	<title>{title} - TVDom</title>
+	<title>{seoConfig.title}</title>
+	<meta name="description" content={seoConfig.description} />
+	<meta name="keywords" content={seoConfig.keywords} />
+	
+	<!-- Open Graph -->
+	<meta property="og:title" content={seoConfig.title} />
+	<meta property="og:description" content={seoConfig.description} />
+	<meta property="og:image" content={seoConfig.image} />
+	<meta property="og:url" content={seoConfig.url} />
+	<meta property="og:type" content={seoConfig.type} />
+	{#if releaseDate}
+		<meta property="og:release_date" content={releaseDate} />
+	{/if}
+	
+	<!-- Twitter Card -->
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content={seoConfig.title} />
+	<meta name="twitter:description" content={seoConfig.description} />
+	<meta name="twitter:image" content={seoConfig.image} />
+	
+	<!-- Additional Meta -->
+	{#if details.tagline}
+		<meta name="tagline" content={details.tagline} />
+	{/if}
+	{#if details.vote_average}
+		<meta name="rating" content={details.vote_average.toFixed(1)} />
+	{/if}
+	
+	<!-- Canonical URL -->
+	<link rel="canonical" href={seoConfig.url} />
+	
+	<!-- Structured Data -->
+	{@html `<script type="application/ld+json">${JSON.stringify(structuredData)}</script>`}
+	{@html `<script type="application/ld+json">${JSON.stringify(breadcrumbData)}</script>`}
 </svelte:head>
 
 <svelte:window on:keydown={handleKeydown} />

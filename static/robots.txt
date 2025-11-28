@@ -1,3 +1,24 @@
-# allow crawling everything by default
+# Robots.txt for TVDom
+# Allow all search engines to crawl the site
+
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /api/
+Disallow: /_app/
+
+# Sitemap location
+Sitemap: https://tvdom.local/sitemap.xml
+
+# Specific rules for search engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# Block bad bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /

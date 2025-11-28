@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ShieldCheck, Workflow, HandHeart, Server, Radar, Mail } from 'lucide-svelte';
+	import { ShieldCheck, Workflow, HandHeart, Server, Mail } from 'lucide-svelte';
 
 	const lastUpdated = 'November 28, 2025';
 

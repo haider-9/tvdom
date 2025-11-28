@@ -4,12 +4,25 @@
 	import Navbar from '$lib/components/Navbar.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import favicon from '$lib/assets/favicon.svg';
+	import { generateSEOTags, generateStructuredData } from '$lib/seo';
 
-	let { children } = $props();
+	let { children, data } = $props();
+
+	const websiteStructuredData = generateStructuredData({
+		type: 'WebSite',
+		data: {}
+	});
 </script>
 
 <svelte:head>
+	<!-- Favicon -->
 	<link rel="icon" href={favicon} />
+	<link rel="apple-touch-icon" href={favicon} />
+	
+	<!-- Structured Data for Website -->
+	{@html `<script type="application/ld+json">${JSON.stringify(websiteStructuredData)}</script>`}
+	
+	<!-- Fonts -->
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
 	<link

@@ -5,6 +5,8 @@
 	// dialog UI is not used for the gallery lightbox; use a simple custom modal
 	import MediaCard from '$lib/components/MediaCard.svelte';
 	import type { PageData } from './$types';
+	import { generateSEOTags, generateStructuredData } from '$lib/seo';
+	import { page } from '$app/stores';
 
 	let { data }: { data: PageData } = $props();
 
@@ -44,10 +46,67 @@
 		if (e.key === 'ArrowLeft') prevImage();
 		if (e.key === 'ArrowRight') nextImage();
 	}
+
+	// SEO Configuration
+	const seoDescription = details.biography || `Learn more about ${details.name}, ${details.known_for_department || "actor"} known for their work in movies and TV shows.`;
+	const seoImage = profileUrl || "";
+	const seoKeywords = [
+		details.name,
+		details.known_for_department || "actor",
+		"movies",
+		"TV shows",
+		"entertainment",
+		...(details.place_of_birth ? [details.place_of_birth] : [])
+	];
+
+	const seoConfig = generateSEOTags({
+		title: `${details.name}${details.known_for_department ? ` - ${details.known_for_department}` : ""}`,
+		description: seoDescription.substring(0, 160),
+		image: seoImage,
+		url: $page.url.pathname,
+		keywords: seoKeywords
+	});
+
+	const structuredData = generateStructuredData({
+		type: "Person",
+		data: details
+	});
+
+	const breadcrumbs = [
+		{ name: "Home", url: "/" },
+		{ name: "People", url: "/people" },
+		{ name: details.name, url: $page.url.pathname }
+	];
+	const breadcrumbData = generateStructuredData({
+		type: "BreadcrumbList",
+		data: breadcrumbs
+	});
 </script>
 
 <svelte:head>
-	<title>{details.name} - TVDom</title>
+	<title>{seoConfig.title} | TVDom</title>
+	<meta name="description" content={seoConfig.description} />
+	<meta name="keywords" content={seoConfig.keywords} />
+	
+	<!-- Open Graph -->
+	<meta property="og:title" content={seoConfig.title} />
+	<meta property="og:description" content={seoConfig.description} />
+	<meta property="og:image" content={seoConfig.image} />
+	<meta property="og:url" content={seoConfig.url} />
+	<meta property="og:type" content="profile" />
+	
+	<!-- Twitter Card -->
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content={seoConfig.title} />
+	<meta name="twitter:description" content={seoConfig.description} />
+	<meta name="twitter:image" content={seoConfig.image} />
+	
+	<!-- Canonical URL -->
+	<link rel="canonical" href={seoConfig.url} />
+	
+	<!-- Structured Data -->
+	{@html `<script type="application/ld+json">${JSON.stringify(structuredData)}</script>`}
+	{@html `<script type="application/ld+json">${JSON.stringify(breadcrumbData)}</script>`}
 </svelte:head>
 
 <svelte:window on:keydown={handleKeydown} />
