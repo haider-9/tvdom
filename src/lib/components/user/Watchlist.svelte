@@ -21,6 +21,7 @@
         AlertCircle,
     } from "lucide-svelte";
     import type { WatchlistItem } from "$lib/user-types.js";
+    import Button from "../ui/button/button.svelte";
 
     // Props
     let { showAddButton = true }: { showAddButton?: boolean } = $props();
@@ -238,13 +239,14 @@
         </div>
 
         {#if showAddButton}
-            <button
+            <Button
+            variant="default"
                 onclick={() => (showAddModal = true)}
-                class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                
             >
                 <Plus class="w-4 h-4" />
                 Add to Watchlist
-            </button>
+            </Button>
         {/if}
     </div>
 
@@ -811,19 +813,20 @@
                 </div>
 
                 <div class="flex gap-3 pt-4">
-                    <button
+                    <Button
                         type="submit"
-                        class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                        variant='default'
                     >
                         Add to Watchlist
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         type="button"
                         onclick={() => (showAddModal = false)}
-                        class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors"
+                        variant="secondary"
+                       
                     >
                         Cancel
-                    </button>
+                    </Button>
                 </div>
             </form>
         </div>
