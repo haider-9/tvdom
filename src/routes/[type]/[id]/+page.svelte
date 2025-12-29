@@ -7,10 +7,17 @@
 		Users,
 		Film,
 		Image,
+		Plus,
+		Heart,
+		Check,
+		Bookmark,
 	} from "lucide-svelte";
 	import * as Card from "$lib/components/ui/card";
+	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 	import { Badge } from "$lib/components/ui/badge";
 	import { Button } from "$lib/components/ui/button";
+	import { toast } from "$lib/components/ui/toast";
+	import { userStore } from "$lib/stores/user.svelte.js";
 	import MediaCard from "$lib/components/MediaCard.svelte";
 	import type { PageData } from "./$types";
 
@@ -49,6 +56,88 @@
 
 	let lightboxOpen = $state(false);
 	let currentIndex = $state(0);
+
+	// User interaction states
+	let isInWatchlist = $derived(
+		userStore.userWatchlist.some(item => item.mediaId === details.id.toString())
+	);
+
+	let isWatched = $derived(
+		userStore.userWatched.some(item => item.mediaId === details.id.toString())
+	);
+
+	let userRating = $derived(
+		userStore.userRatings.find(rating => rating.mediaId === details.id.toString())
+	);
+
+	// User actions
+	async function addToWatchlist() {
+		if (!userStore.isAuthenticated) {
+			toast.error("Please sign in to add to watchlist");
+			return;
+		}
+
+		const promise = userStore.addToWatchlist(
+			details.id.toString(),
+			mediaType,
+			title,
+			posterUrl
+		);
+
+		toast.promise(promise, {
+			loading: "Adding to watchlist...",
+			success: `Added "${title}" to your watchlist!`,
+			error: "Failed to add to watchlist"
+		});
+	}
+
+	async function removeFromWatchlist() {
+		const promise = userStore.removeFromWatchlist(details.id.toString());
+
+		toast.promise(promise, {
+			loading: "Removing from watchlist...",
+			success: `Removed "${title}" from your watchlist`,
+			error: "Failed to remove from watchlist"
+		});
+	}
+
+	async function markAsWatched() {
+		if (!userStore.isAuthenticated) {
+			toast.error("Please sign in to mark as watched");
+			return;
+		}
+
+		const promise = userStore.markAsWatched(
+			details.id.toString(),
+			mediaType,
+			title
+		);
+
+		toast.promise(promise, {
+			loading: "Marking as watched...",
+			success: `Marked "${title}" as watched!`,
+			error: "Failed to mark as watched"
+		});
+	}
+
+	async function rateMedia(rating: number) {
+		if (!userStore.isAuthenticated) {
+			toast.error("Please sign in to rate");
+			return;
+		}
+
+		const promise = userStore.addRating(
+			details.id.toString(),
+			mediaType,
+			rating
+		);
+
+		toast.promise(promise, {
+			loading: "Adding rating...",
+			success: `Rated "${title}" ${rating}/10!`,
+			error: "Failed to add rating"
+		});
+	}
 
 	function openLightbox(i: number) {
 		currentIndex = i;
@@ -203,6 +292,87 @@
 						Watch Trailer
 					</Button>
 				{/if}
+
+				<!-- User Actions -->
+				<div class="flex flex-wrap gap-4">
+					<!-- Watchlist Button -->
+					{#if isInWatchlist}
+						<Button
+							variant="secondary"
+							class="gap-2 px-6 py-3 text-base"
+							onclick={removeFromWatchlist}
+						>
+							<Check class="w-5 h-5" />
+							In Watchlist
+						</Button>
+					{:else}
+						<Button
+							variant="outline"
+							class="gap-2 px-6 py-3 text-base"
+							onclick={addToWatchlist}
+						>
+							<Plus class="w-5 h-5" />
+							Add to Watchlist
+						</Button>
+					{/if}
+
+					<!-- Watched Button -->
+					{#if isWatched}
+						<Button
+							variant="secondary"
+							class="gap-2 px-6 py-3 text-base"
+							disabled
+						>
+							<Heart class="w-5 h-5 fill-current" />
+							Watched
+						</Button>
+					{:else}
+						<Button
+							variant="outline"
+							class="gap-2 px-6 py-3 text-base"
+							onclick={markAsWatched}
+						>
+							<Heart class="w-5 h-5" />
+							Mark as Watched
+						</Button>
+					{/if}
+
+					<!-- Rating Dropdown -->
+					<DropdownMenu.Root>
+						<DropdownMenu.Trigger>
+							<Button
+								variant={userRating ? "secondary" : "outline"}
+								class="gap-2 px-6 py-3 text-base"
+							>
+								<Star class="w-5 h-5 {userRating ? 'fill-yellow-400 text-yellow-400' : ''}" />
+								{userRating ? `${userRating.rating}/10` : 'Rate'}
+							</Button>
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Content class="w-48">
+							<DropdownMenu.Item class="font-medium text-xs text-muted-foreground">
+								{#snippet children()}
+									Rate this {mediaType}
+								{/snippet}
+							</DropdownMenu.Item>
+							<DropdownMenu.Separator />
+							{#each [10, 9, 8, 7, 6, 5, 4, 3, 2, 1] as rating}
+								<DropdownMenu.Item 
+									onclick={() => rateMedia(rating)}
+									class="flex items-center justify-between"
+								>
+									{#snippet children()}
+										<span>{rating}/10</span>
+										<div class="flex">
+											{#each Array(Math.ceil(rating/2)) as _}
+												<Star class="h-3 w-3 fill-yellow-400 text-yellow-400" />
+											{/each}
+										</div>
+									{/snippet}
+								</DropdownMenu.Item>
+							{/each}
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
+				</div>
 
 				<div>
 					<h2 class="text-2xl font-bold mb-3 flex items-center gap-2">

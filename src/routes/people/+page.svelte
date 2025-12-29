@@ -42,7 +42,7 @@
 				{#if data.totalPages > 1}
 					<div class="flex justify-center items-center gap-4 mt-12">
 						{#if data.currentPage > 1}
-							<a href={`/people?page=${data.currentPage - 1}`} data-sveltekit-reload>
+							<a href={`/people?page=${data.currentPage - 1}`}>
 								<Button 
 									variant="outline" 
 									class="px-6 py-6"
@@ -57,7 +57,7 @@
 						</Badge>
 
 						{#if data.currentPage < data.totalPages && data.currentPage < 500}
-							<a href={`/people?page=${data.currentPage + 1}`} data-sveltekit-reload>
+							<a href={`/people?page=${data.currentPage + 1}`}>
 								<Button 
 									variant="outline" 
 									class="px-6 py-6"
@@ -72,5 +72,7 @@
 		</section>
 	</main>
 </div>
+
+
 
 

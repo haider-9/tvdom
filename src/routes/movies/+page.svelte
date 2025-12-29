@@ -43,7 +43,7 @@ const sectionTitle = sections.find(s => s.id === data.currentSection)?.label || 
 			<div class="flex flex-wrap gap-2 rounded-full bg-card/80 px-1 py-1 border border-border/80">
 				{#each sections as section}
 					{@const Icon = section.icon}
-					<a href={`/movies?section=${section.id}`} data-sveltekit-reload>
+					<a href={`/movies?section=${section.id}`}>
 						<Button
 							variant={data.currentSection === section.id ? 'default' : 'ghost'}
 							class="flex items-center gap-1.5 rounded-full px-3 md:px-4 py-2 text-xs md:text-sm"
@@ -71,7 +71,7 @@ const sectionTitle = sections.find(s => s.id === data.currentSection)?.label || 
 					</p>
 					<div class="flex justify-end items-center gap-3">
 						{#if data.currentPage > 1}
-							<a href={`/movies?section=${data.currentSection}&page=${data.currentPage - 1}`} data-sveltekit-reload>
+							<a href={`/movies?section=${data.currentSection}&page=${data.currentPage - 1}`}>
 								<Button
 									variant="outline"
 									class="px-4 md:px-6"
@@ -81,7 +81,7 @@ const sectionTitle = sections.find(s => s.id === data.currentSection)?.label || 
 							</a>
 						{/if}
 						{#if data.currentPage < data.totalPages && data.currentPage < 500}
-							<a href={`/movies?section=${data.currentSection}&page=${data.currentPage + 1}`} data-sveltekit-reload>
+							<a href={`/movies?section=${data.currentSection}&page=${data.currentPage + 1}`}>
 								<Button
 									variant="outline"
 									class="px-4 md:px-6"

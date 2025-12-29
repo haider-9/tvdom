@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Star, Calendar } from 'lucide-svelte';
+	import { goto } from '$app/navigation';
 	import * as Card from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
 
@@ -19,9 +20,12 @@
 		? `https://image.tmdb.org/t/p/w780${media.backdrop_path}`
 		: imageUrl;
 
+	function handleCardClick() {
+		goto(`/${type}/${media.id}`);
+	}
 </script>
 
-<a href="/{type}/{media.id}" class="group block">
+<button class="group block cursor-pointer w-full text-left" onclick={handleCardClick}>
 	<Card.Root class="relative overflow-hidden rounded-3xl w-full lg:w-80 bg-card/40 border border-border/60 transition-colors duration-300">
 		<!-- Full-card image -->
 		<div class="relative h-80 md:h-96 w-full">
@@ -74,4 +78,4 @@
 			</div>
 		</div>
 	</Card.Root>
-</a>
+</button>
