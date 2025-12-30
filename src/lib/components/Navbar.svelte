@@ -189,24 +189,6 @@
                     <span>Profile</span>
                   </a>
 
-                  <a
-                    href="/movies"
-                    class="flex items-center gap-3 w-full px-3 py-2 text-left text-sm text-foreground hover:bg-accent rounded-md transition-colors"
-                    onclick={closeDropdown}
-                  >
-                    <Film class="w-4 h-4" />
-                    <span>Movies</span>
-                  </a>
-
-                  <a
-                    href="/tv"
-                    class="flex items-center gap-3 w-full px-3 py-2 text-left text-sm text-foreground hover:bg-accent rounded-md transition-colors"
-                    onclick={closeDropdown}
-                  >
-                    <Tv class="w-4 h-4" />
-                    <span>TV Shows</span>
-                  </a>
-
                   <hr class="my-2 border-border" />
 
                   <button
@@ -320,7 +302,7 @@
                 <div class="border-t border-border mt-2 pt-2">
                   {#if userStore.isAuthenticated}
                     <!-- Authenticated user -->
-                    <div class="flex items-center gap-3 p-2 mb-2">
+                    <a href="/profile" class="flex items-center gap-3 p-2 mb-2 rounded-md hover:bg-accent/5">
                       <div class="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-300 dark:border-gray-600">
                         {#if userStore.user?.avatar}
                           <img
@@ -340,7 +322,7 @@
                         <p class="font-medium text-sm">{userStore.user?.displayName}</p>
                         <p class="text-xs text-muted-foreground">@{userStore.user?.username}</p>
                       </div>
-                    </div>
+                    </a>
                     
                     <button
                       onclick={handleLogout}

@@ -30,7 +30,7 @@
                     See more
                 </Button>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                 {#each data.trendingMovies.slice(0, 10) as movie}
                     <MediaCard media={movie} type="movie" />
                 {/each}
@@ -60,7 +60,7 @@
                     See more
                 </Button>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                 {#each data.trendingTV.slice(0, 10) as show}
                     <MediaCard media={show} type="tv" />
                 {/each}
@@ -90,7 +90,7 @@
                     See more
                 </Button>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                 {#each data.popularMovies.slice(0, 10) as movie}
                     <MediaCard media={movie} type="movie" />
                 {/each}
@@ -116,7 +116,7 @@
                     See more
                 </Button>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
                 {#each data.popularTV.slice(0, 10) as show}
                     <MediaCard media={show} type="tv" />
                 {/each}

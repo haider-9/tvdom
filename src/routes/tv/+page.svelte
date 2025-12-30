@@ -57,7 +57,7 @@ const sectionTitle = sections.find(s => s.id === data.currentSection)?.label || 
 
 		<!-- Results grid -->
 		<section class="space-y-6">
-			<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4  gap-6">
+			<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
 				{#each data.shows as show}
 					<MediaCard media={show} type="tv" />
 				{/each}
