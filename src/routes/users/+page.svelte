@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { Search, Users, Star, Calendar, MapPin, Globe, ChevronLeft, ChevronRight, User as UserIcon } from 'lucide-svelte';
+  import { Search, Users, Star, Calendar, MapPin, ChevronLeft, ChevronRight, User as UserIcon } from 'lucide-svelte';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import * as Card from '$lib/components/ui/card';
-  import { Badge } from '$lib/components/ui/badge';
   import { goto } from '$app/navigation';
   import type { PageData } from './$types';
 
@@ -113,57 +112,74 @@
       {#if data.users.length > 0}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {#each data.users as user}
-            <Card.Root class="overflow-hidden hover:shadow-lg transition-shadow duration-300">
-              <Card.Content class="p-6">
-                <div class="flex flex-col items-center text-center space-y-4">
+            <Card.Root class="overflow-hidden group relative">
+              <!-- Full Card Banner Background -->
+              <div class="absolute inset-0">
+                {#if user.banner}
+                  <img
+                    src={user.banner}
+                    alt="{user.displayName}'s banner"
+                    class="w-full h-full object-cover blur-[4px]"
+                  />
+                  <div class="absolute inset-0 bg-black/60"></div>
+                {:else}
+                  <div class="w-full h-full bg-gradient-to-br from-primary/30 to-accent/30 blur-sm"></div>
+                  <div class="absolute inset-0 bg-background/80"></div>
+                {/if}
+              </div>
+
+              <!-- Verified badge -->
+              {#if user.isVerified}
+                <div class="absolute top-3 right-3 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shadow-lg z-10">
+                  <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+              {/if}
+
+              <Card.Content class="p-4 relative z-10">
+                <div class="flex flex-col items-center text-center space-y-3">
                   <!-- Avatar -->
                   <div class="relative">
                     {#if user.avatar}
                       <img
                         src={user.avatar}
                         alt="{user.displayName}'s avatar"
-                        class="w-16 h-16 rounded-full object-cover border-2 border-border"
+                        class="w-14 h-14 rounded-full object-cover border-3 border-white shadow-lg"
                       />
                     {:else}
-                      <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-2 border-border">
-                        <span class="text-white font-bold text-lg">
+                      <div class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-3 border-white shadow-lg">
+                        <span class="text-white font-bold text-base">
                           {getInitials(user.displayName)}
                         </span>
-                      </div>
-                    {/if}
-                    {#if user.isVerified}
-                      <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                        <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                        </svg>
                       </div>
                     {/if}
                   </div>
 
                   <!-- User info -->
-                  <div class="space-y-2">
-                    <h3 class="font-semibold text-lg">{user.displayName}</h3>
-                    <p class="text-sm text-muted-foreground">@{user.username}</p>
+                  <div class="space-y-1">
+                    <h3 class="font-semibold text-base text-white drop-shadow-lg">{user.displayName}</h3>
+                    <p class="text-xs text-white/80 drop-shadow">@{user.username}</p>
                     
                     {#if user.bio}
-                      <p class="text-sm text-muted-foreground line-clamp-2">{user.bio}</p>
+                      <p class="text-xs text-white/70 line-clamp-2 drop-shadow">{user.bio}</p>
                     {/if}
                   </div>
 
                   <!-- Stats -->
-                  <div class="flex items-center gap-4 text-sm text-muted-foreground">
+                  <div class="flex items-center gap-3 text-xs text-white/80">
                     <div class="flex items-center gap-1">
-                      <Star class="w-4 h-4" />
+                      <Star class="w-3 h-3" />
                       <span>{user.totalRatings}</span>
                     </div>
                     <div class="flex items-center gap-1">
-                      <Users class="w-4 h-4" />
+                      <Users class="w-3 h-3" />
                       <span>{user.followerCount}</span>
                     </div>
                   </div>
 
                   <!-- Additional info -->
-                  <div class="space-y-1 text-xs text-muted-foreground">
+                  <div class="space-y-0.5 text-xs text-white/70">
                     {#if user.location}
                       <div class="flex items-center justify-center gap-1">
                         <MapPin class="w-3 h-3" />
@@ -178,8 +194,8 @@
 
                   <!-- View profile button -->
                   <a href="/user/{user.username}" class="w-full">
-                    <Button variant="outline" class="w-full">
-                      <UserIcon class="w-4 h-4 mr-2" />
+                    <Button variant="secondary" class="w-full h-8 text-sm bg-white/20 hover:bg-white/30 text-white border-white/30 backdrop-blur-sm transition-all">
+                      <UserIcon class="w-3 h-3 mr-2" />
                       View Profile
                     </Button>
                   </a>

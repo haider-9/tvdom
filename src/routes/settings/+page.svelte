@@ -1,10 +1,8 @@
 <script lang="ts">
-  import { Settings, Palette, Moon, Sun, User, Bell, Shield, Globe, Zap, Skull, Layers, Edit, Lock, Download, Save } from 'lucide-svelte';
+  import { Settings, Palette, Moon, Sun, Bell, Shield, Globe, Zap, Skull, Layers, Lock, Download, Save } from 'lucide-svelte';
   import { Button } from '$lib/components/ui/button';
   import * as Card from '$lib/components/ui/card';
   import { Badge } from '$lib/components/ui/badge';
-  import { Input } from '$lib/components/ui/input';
-  import { Textarea } from '$lib/components/ui/textarea';
   import { Switch } from '$lib/components/ui/switch';
   import { themeStore, type Theme } from '$lib/stores/theme.svelte.js';
   import { userStore } from '$lib/stores/user.svelte.js';
@@ -82,36 +80,7 @@
     showWatchlist: true
   });
 
-  // Account form data
-  let accountForm = $state({
-    displayName: userStore.user?.displayName || '',
-    bio: userStore.user?.bio || '',
-    location: userStore.user?.location || '',
-    website: userStore.user?.website || ''
-  });
-
-  let isUpdatingAccount = $state(false);
   let isUpdatingPrivacy = $state(false);
-
-  async function updateAccount() {
-    if (!userStore.user) return;
-    
-    isUpdatingAccount = true;
-    try {
-      await userStore.updateProfile({
-        displayName: accountForm.displayName,
-        bio: accountForm.bio,
-        location: accountForm.location,
-        website: accountForm.website
-      });
-      toast.success('Account updated successfully!');
-    } catch (error) {
-      toast.error('Failed to update account');
-      console.error('Account update error:', error);
-    } finally {
-      isUpdatingAccount = false;
-    }
-  }
 
   async function togglePrivateProfile() {
     isUpdatingPrivacy = true;
