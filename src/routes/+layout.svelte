@@ -10,6 +10,9 @@
     import RegisterModal from "$lib/components/auth/RegisterModal.svelte";
     import UserProfile from "$lib/components/user/UserProfile.svelte";
     import { userStore } from "$lib/stores/user.svelte.js";
+    
+    // Initialize theme store
+    import { themeStore } from "$lib/stores/theme.svelte.js";
 
     let { children } = $props();
 </script>
