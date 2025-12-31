@@ -204,34 +204,38 @@
 
     // Function to load follow data
     async function loadFollowData() {
-        if (!followDataLoading && activeTab === "follows") {
-            followDataLoading = true;
-            try {
-                const [followersResp, followingResp] = await Promise.all([
-                    fetch(`/api/follows?userId=${user._id}&type=followers`),
-                    fetch(`/api/follows?userId=${user._id}&type=following`),
-                ]);
+        if (followDataLoading) return; // Prevent multiple simultaneous calls
+        
+        followDataLoading = true;
+        try {
+            const [followersResp, followingResp] = await Promise.all([
+                fetch(`/api/follows?userId=${user._id}&type=followers`),
+                fetch(`/api/follows?userId=${user._id}&type=following`),
+            ]);
 
-                if (followersResp.ok) {
-                    const followersResponse = await followersResp.json();
-                    followersData = followersResponse.follows || [];
-                }
-
-                if (followingResp.ok) {
-                    const followingResponse = await followingResp.json();
-                    followingData = followingResponse.follows || [];
-                }
-            } catch (error) {
-                console.error("Failed to load follow data:", error);
-            } finally {
-                followDataLoading = false;
+            if (followersResp.ok) {
+                const followersResponse = await followersResp.json();
+                followersData = followersResponse.follows || [];
             }
+
+            if (followingResp.ok) {
+                const followingResponse = await followingResp.json();
+                followingData = followingResponse.follows || [];
+            }
+        } catch (error) {
+            console.error("Failed to load follow data:", error);
+        } finally {
+            followDataLoading = false;
         }
     }
 
-    // Watch for tab changes to load follow data
+    // Track if we've loaded follow data to prevent infinite loops
+    let followDataLoaded = $state(false);
+
+    // Watch for tab changes to load follow data (only once)
     $effect(() => {
-        if (activeTab === "follows") {
+        if (activeTab === "follows" && !followDataLoaded && !followDataLoading) {
+            followDataLoaded = true;
             loadFollowData();
         }
     });

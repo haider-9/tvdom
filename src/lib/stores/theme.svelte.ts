@@ -1,6 +1,6 @@
 import { browser } from "$app/environment";
 
-export type Theme = "light" | "dark" | "bubblegum";
+export type Theme = "light" | "dark" | "bubblegum" | "cyberpunk" | "doom65" | "claymorphism";
 
 class ThemeStore {
   #theme = $state<Theme>("bubblegum");
@@ -27,7 +27,7 @@ class ThemeStore {
       const theme = (stored as Theme) || "bubblegum";
 
       // Validate theme
-      if (stored && !["light", "dark", "bubblegum"].includes(stored)) {
+      if (stored && !["light", "dark", "bubblegum", "cyberpunk", "doom65", "claymorphism"].includes(stored)) {
         this.#theme = "bubblegum";
       } else {
         this.#theme = theme;
@@ -53,7 +53,7 @@ class ThemeStore {
     const html = document.documentElement;
 
     // Remove existing theme classes
-    html.classList.remove("dark", "theme-bubblegum");
+    html.classList.remove("dark", "theme-bubblegum", "theme-cyberpunk", "theme-doom65", "theme-claymorphism");
 
     // Apply new theme
     switch (theme) {
@@ -64,6 +64,18 @@ class ThemeStore {
       case "bubblegum":
         html.classList.add("theme-bubblegum");
         html.setAttribute("data-theme", "bubblegum");
+        break;
+      case "cyberpunk":
+        html.classList.add("theme-cyberpunk");
+        html.setAttribute("data-theme", "cyberpunk");
+        break;
+      case "doom65":
+        html.classList.add("theme-doom65");
+        html.setAttribute("data-theme", "doom65");
+        break;
+      case "claymorphism":
+        html.classList.add("theme-claymorphism");
+        html.setAttribute("data-theme", "claymorphism");
         break;
       case "light":
       default:
@@ -90,7 +102,7 @@ class ThemeStore {
   }
 
   toggleTheme() {
-    const themes: Theme[] = ["bubblegum", "light", "dark"];
+    const themes: Theme[] = ["bubblegum", "light", "dark", "cyberpunk", "doom65", "claymorphism"];
     const currentIndex = themes.indexOf(this.#theme);
     const nextIndex = (currentIndex + 1) % themes.length;
     this.setTheme(themes[nextIndex]);
@@ -105,7 +117,7 @@ if (browser) {
     const stored = localStorage.getItem("tvdom-theme") || "bubblegum";
     const html = document.documentElement;
 
-    html.classList.remove("dark", "theme-bubblegum");
+    html.classList.remove("dark", "theme-bubblegum", "theme-cyberpunk", "theme-doom65", "theme-claymorphism");
 
     if (stored === "dark") {
       html.classList.add("dark");
@@ -113,6 +125,15 @@ if (browser) {
     } else if (stored === "bubblegum") {
       html.classList.add("theme-bubblegum");
       html.setAttribute("data-theme", "bubblegum");
+    } else if (stored === "cyberpunk") {
+      html.classList.add("theme-cyberpunk");
+      html.setAttribute("data-theme", "cyberpunk");
+    } else if (stored === "doom65") {
+      html.classList.add("theme-doom65");
+      html.setAttribute("data-theme", "doom65");
+    } else if (stored === "claymorphism") {
+      html.classList.add("theme-claymorphism");
+      html.setAttribute("data-theme", "claymorphism");
     } else {
       html.setAttribute("data-theme", "light");
     }

@@ -196,9 +196,9 @@
 </svelte:head>
 
 <div
-  class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
+  class="min-h-screen flex  items-center  justify-center py-12 px-4 sm:px-6 lg:px-8"
 >
-  <div class="max-w-md w-full space-y-8">
+  <div class="w-full space-y-8">
     <div>
       <h2 class="mt-6 text-center text-3xl font-bold">Create your account</h2>
       <p class="mt-2 text-center text-sm text-gray-600">
@@ -209,7 +209,7 @@
       </p>
     </div>
 
-    <form class="mt-8 space-y-6" onsubmit={handleSubmit}>
+    <form class="mt-8 border mx-auto space-y-6 rounded-2xl w-[50rem] p-4 bg-card" onsubmit={handleSubmit}>
       <div class="space-y-4">
         <div>
           <label for="username" class="block text-sm font-medium">

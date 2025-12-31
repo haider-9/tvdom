@@ -984,6 +984,10 @@ class UserStore {
         this.#userFollows.push(newFollow);
         console.log("Added to local follows:", this.#userFollows.length);
 
+        // Clear cache for this follow relationship
+        const cacheKey = `${followerId}-${followingId}`;
+        this.#followStatusCache.delete(cacheKey);
+
         // Update user's following count
         if (this.#authState.user) {
           this.#authState.user.followingCount =
@@ -1045,6 +1049,10 @@ class UserStore {
           `Removed from local follows: ${beforeCount} -> ${this.#userFollows.length}`,
         );
 
+        // Clear cache for this follow relationship
+        const cacheKey = `${followerId}-${followingId}`;
+        this.#followStatusCache.delete(cacheKey);
+
         // Update user's following count
         if (this.#authState.user) {
           this.#authState.user.followingCount = Math.max(
@@ -1073,6 +1081,9 @@ class UserStore {
     }
   }
 
+  // Cache for follow status checks to prevent repeated API calls
+  #followStatusCache = new Map<string, { result: boolean; timestamp: number }>();
+
   async checkIfFollowing(followingId: string): Promise<boolean> {
     if (!this.#authState.user && !browser) return false;
 
@@ -1084,6 +1095,14 @@ class UserStore {
         return false;
       }
 
+      // Check cache first (cache for 30 seconds)
+      const cacheKey = `${followerId}-${followingId}`;
+      const cached = this.#followStatusCache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < 30000) {
+        console.log("Returning cached follow status:", cached.result);
+        return cached.result;
+      }
+
       console.log(`Checking if ${followerId} follows ${followingId}`);
 
       // First check local state
@@ -1093,7 +1112,9 @@ class UserStore {
       });
       if (localFollow) {
         console.log("Found follow in local state");
-        return true;
+        const result = true;
+        this.#followStatusCache.set(cacheKey, { result, timestamp: Date.now() });
+        return result;
       }
 
       // If not found locally, check with server
@@ -1105,7 +1126,9 @@ class UserStore {
 
       if (!response.follows || response.follows.length === 0) {
         console.log("No follows found on server");
-        return false;
+        const result = false;
+        this.#followStatusCache.set(cacheKey, { result, timestamp: Date.now() });
+        return result;
       }
 
       const isFollowing = response.follows.some((follow: any) => {
@@ -1123,8 +1146,8 @@ class UserStore {
 
       console.log(`Final follow status: ${isFollowing}`);
 
-      // Update local state if we found follows on server
-      if (response.follows.length > 0) {
+      // Update local state if we found follows on server (but only if we don't have any local follows yet)
+      if (response.follows.length > 0 && this.#userFollows.length === 0) {
         this.#userFollows = response.follows.map((follow: any) => ({
           id: follow._id,
           followerId: follow.followerId._id || follow.followerId,
@@ -1137,6 +1160,9 @@ class UserStore {
           following: follow.followingId,
         }));
       }
+
+      // Cache the result
+      this.#followStatusCache.set(cacheKey, { result: isFollowing, timestamp: Date.now() });
 
       return isFollowing;
     } catch (error) {

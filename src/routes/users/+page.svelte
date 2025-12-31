@@ -90,6 +90,13 @@
 
     <!-- Results -->
     <section class="space-y-6">
+      {#if data.error}
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+          <h3 class="text-red-800 font-semibold mb-2">Error loading users</h3>
+          <p class="text-red-600 text-sm">{data.error}</p>
+        </div>
+      {/if}
+
       {#if data.query}
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-semibold">
