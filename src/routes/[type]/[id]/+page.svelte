@@ -110,7 +110,8 @@
 		const promise = userStore.markAsWatched(
 			details.id.toString(),
 			mediaType,
-			title
+			title,
+			posterUrl
 		);
 
 		toast.promise(promise, {

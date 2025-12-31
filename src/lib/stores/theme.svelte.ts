@@ -1,14 +1,14 @@
-import { browser } from '$app/environment';
+import { browser } from "$app/environment";
 
-type Theme = 'light' | 'dark';
+export type Theme = "light" | "dark" | "bubblegum";
 
 class ThemeStore {
-  #theme = $state<Theme>('light');
-  #mounted = $state(false);
+  #theme = $state<Theme>("bubblegum");
+  #isInitialized = $state(false);
 
   constructor() {
     if (browser) {
-      this.initialize();
+      this.#initialize();
     }
   }
 
@@ -16,55 +16,113 @@ class ThemeStore {
     return this.#theme;
   }
 
-  get mounted() {
-    return this.#mounted;
+  get isInitialized() {
+    return this.#isInitialized;
   }
 
-  private initialize() {
-    // Get stored theme or system preference
-    const stored = localStorage.getItem('theme') as Theme | null;
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    this.#theme = stored || (prefersDark ? 'dark' : 'light');
-    this.#mounted = true;
-    
-    // Apply the theme
-    this.applyTheme(this.#theme);
-    
-    // Listen for system theme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      if (!localStorage.getItem('theme')) {
-        // Only auto-switch if user hasn't manually set a theme
-        this.setTheme(e.matches ? 'dark' : 'light');
+  #initialize() {
+    try {
+      // Get stored theme
+      const stored = localStorage.getItem("tvdom-theme");
+      const theme = (stored as Theme) || "bubblegum";
+
+      // Validate theme
+      if (stored && !["light", "dark", "bubblegum"].includes(stored)) {
+        this.#theme = "bubblegum";
+      } else {
+        this.#theme = theme;
       }
-    };
-    
-    mediaQuery.addEventListener('change', handleChange);
-  }
 
-  private applyTheme(theme: Theme) {
-    if (!browser) return;
-    
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+      // Apply immediately
+      this.#applyTheme(this.#theme);
+
+      this.#isInitialized = true;
+
+      console.log("Theme initialized:", this.#theme);
+    } catch (error) {
+      console.warn("Theme initialization failed:", error);
+      this.#theme = "bubblegum";
+      this.#applyTheme("bubblegum");
+      this.#isInitialized = true;
     }
   }
 
+  #applyTheme(theme: Theme) {
+    if (!browser || !document.documentElement) return;
+
+    const html = document.documentElement;
+
+    // Remove existing theme classes
+    html.classList.remove("dark", "theme-bubblegum");
+
+    // Apply new theme
+    switch (theme) {
+      case "dark":
+        html.classList.add("dark");
+        html.setAttribute("data-theme", "dark");
+        break;
+      case "bubblegum":
+        html.classList.add("theme-bubblegum");
+        html.setAttribute("data-theme", "bubblegum");
+        break;
+      case "light":
+      default:
+        html.setAttribute("data-theme", "light");
+        break;
+    }
+
+    console.log("Theme applied:", theme);
+  }
+
   setTheme(theme: Theme) {
+    if (!this.#isInitialized) return;
+
     this.#theme = theme;
-    this.applyTheme(theme);
-    
-    if (browser) {
-      localStorage.setItem('theme', theme);
+    this.#applyTheme(theme);
+
+    // Save to localStorage
+    try {
+      localStorage.setItem("tvdom-theme", theme);
+      console.log("Theme saved:", theme);
+    } catch (error) {
+      console.warn("Failed to save theme:", error);
     }
   }
 
   toggleTheme() {
-    this.setTheme(this.#theme === 'light' ? 'dark' : 'light');
+    const themes: Theme[] = ["bubblegum", "light", "dark"];
+    const currentIndex = themes.indexOf(this.#theme);
+    const nextIndex = (currentIndex + 1) % themes.length;
+    this.setTheme(themes[nextIndex]);
   }
 }
 
 export const themeStore = new ThemeStore();
+
+// Apply theme immediately on page load to prevent flash
+if (browser) {
+  const initTheme = () => {
+    const stored = localStorage.getItem("tvdom-theme") || "bubblegum";
+    const html = document.documentElement;
+
+    html.classList.remove("dark", "theme-bubblegum");
+
+    if (stored === "dark") {
+      html.classList.add("dark");
+      html.setAttribute("data-theme", "dark");
+    } else if (stored === "bubblegum") {
+      html.classList.add("theme-bubblegum");
+      html.setAttribute("data-theme", "bubblegum");
+    } else {
+      html.setAttribute("data-theme", "light");
+    }
+
+    console.log("Initial theme applied:", stored);
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initTheme);
+  } else {
+    initTheme();
+  }
+}

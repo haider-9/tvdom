@@ -30,7 +30,7 @@ export interface UserProfile extends User {
     imdb?: string;
   };
   preferences: {
-    theme: 'light' | 'dark' | 'system';
+    theme: 'light' | 'dark' | 'system' | 'bubblegum';
     language: string;
     timezone: string;
     emailNotifications: boolean;

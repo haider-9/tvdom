@@ -14,7 +14,6 @@ A modern, elegant TV and Movie discovery platform built with SvelteKit and TMDB 
 ### 👥 People & Celebrities
 - Discover popular actors, directors, and creators
 - Detailed person pages with biography and career information
-- Photo galleries with interactive lightbox viewer
 - Complete filmography with movie and TV credits
 
 ### 🔍 Search & Discovery

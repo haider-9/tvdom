@@ -28,7 +28,7 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 async function apiRequest(endpoint: string, options: RequestInit = {}) {
   const response = await fetch(endpoint, {
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...options.headers,
     },
     ...options,
@@ -36,7 +36,7 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || 'API request failed');
+    throw new Error(error.error || "API request failed");
   }
 
   return response.json();
@@ -53,6 +53,9 @@ class UserStore {
     error: null,
   });
 
+  // Initialization state
+  #initialized = $state(false);
+
   // User data state
   #userProfile = $state<UserProfile | null>(null);
   #userRatings = $state<Rating[]>([]);
@@ -64,6 +67,8 @@ class UserStore {
   #userFollowers = $state<Follow[]>([]);
   #userActivities = $state<Activity[]>([]);
   #userNotifications = $state<Notification[]>([]);
+  #userPersonRatings = $state<any[]>([]);
+  #userPersonFavorites = $state<any[]>([]);
 
   // UI state
   #isProfileModalOpen = $state(false);
@@ -76,6 +81,7 @@ class UserStore {
   constructor() {
     if (browser) {
       this.initializeFromStorage();
+      this.#initialized = true;
     }
   }
 
@@ -89,6 +95,10 @@ class UserStore {
   get isAuthenticated() {
     return this.#authState.isAuthenticated;
   }
+
+  get initialized() {
+    return this.#initialized;
+  }
   get isLoading() {
     return this.#authState.isLoading;
   }
@@ -101,6 +111,12 @@ class UserStore {
   }
   get userRatings() {
     return this.#userRatings;
+  }
+  get userPersonRatings() {
+    return this.#userPersonRatings;
+  }
+  get userPersonFavorites() {
+    return this.#userPersonFavorites;
   }
   get userReviews() {
     return this.#userReviews;
@@ -185,8 +201,8 @@ class UserStore {
 
     try {
       // Call backend auth endpoint for real email/password validation
-      const response = await apiRequest('/api/auth/login', {
-        method: 'POST',
+      const response = await apiRequest("/api/auth/login", {
+        method: "POST",
         body: JSON.stringify({
           email: credentials.email,
           password: credentials.password,
@@ -223,7 +239,24 @@ class UserStore {
       this.#authState.isAuthenticated = true;
 
       if (browser) {
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(this.#authState.user));
+        // Store user data in localStorage
+        localStorage.setItem(
+          USER_STORAGE_KEY,
+          JSON.stringify(this.#authState.user),
+        );
+
+        // Also store session data for server-side detection
+        const sessionData = {
+          userId: this.#authState.user.id || this.#authState.user._id,
+          user: this.#authState.user,
+          timestamp: Date.now(),
+        };
+
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionData));
+
+        // Set cookies for server-side authentication
+        document.cookie = `tvdom_user=${encodeURIComponent(JSON.stringify(this.#authState.user))}; path=/; max-age=${30 * 24 * 60 * 60}; samesite=lax`;
+        document.cookie = `tvdom_session=${encodeURIComponent(JSON.stringify(sessionData))}; path=/; max-age=${30 * 24 * 60 * 60}; samesite=lax`;
       }
 
       await this.loadUserData();
@@ -269,8 +302,8 @@ class UserStore {
         password: data.password,
       };
 
-      const createResponse = await apiRequest('/api/users', {
-        method: 'POST',
+      const createResponse = await apiRequest("/api/users", {
+        method: "POST",
         body: JSON.stringify(newUserData),
       });
 
@@ -304,7 +337,24 @@ class UserStore {
       this.#authState.isAuthenticated = true;
 
       if (browser) {
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(this.#authState.user));
+        // Store user data in localStorage
+        localStorage.setItem(
+          USER_STORAGE_KEY,
+          JSON.stringify(this.#authState.user),
+        );
+
+        // Store session data
+        const sessionData = {
+          userId: this.#authState.user.id || this.#authState.user._id,
+          user: this.#authState.user,
+          timestamp: Date.now(),
+        };
+
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionData));
+
+        // Set cookies for server-side authentication
+        document.cookie = `tvdom_user=${encodeURIComponent(JSON.stringify(this.#authState.user))}; path=/; max-age=${30 * 24 * 60 * 60}; samesite=lax`;
+        document.cookie = `tvdom_session=${encodeURIComponent(JSON.stringify(sessionData))}; path=/; max-age=${30 * 24 * 60 * 60}; samesite=lax`;
       }
 
       await this.loadUserData();
@@ -334,9 +384,25 @@ class UserStore {
     this.#userActivities = [];
     this.#userNotifications = [];
 
+    // Clear notifications as well
+    if (browser) {
+      try {
+        const { notificationStore } = await import("./notification.svelte.js");
+        notificationStore.clear();
+      } catch (error) {
+        console.warn("Failed to clear notifications:", error);
+      }
+    }
+
     if (browser) {
       localStorage.removeItem(USER_STORAGE_KEY);
       localStorage.removeItem(SESSION_STORAGE_KEY);
+
+      // Clear cookies
+      document.cookie =
+        "tvdom_user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie =
+        "tvdom_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     }
   }
 
@@ -347,13 +413,13 @@ class UserStore {
     this.#authState.isLoading = true;
     try {
       const userId = this.getUserId();
-      
+
       if (!userId) {
-        throw new Error('User ID not found');
+        throw new Error("User ID not found");
       }
 
-      const response = await apiRequest('/api/users', {
-        method: 'PUT',
+      const response = await apiRequest("/api/users", {
+        method: "PUT",
         body: JSON.stringify({
           userId,
           ...data,
@@ -374,7 +440,7 @@ class UserStore {
         );
       }
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error("Error updating profile:", error);
       throw error;
     } finally {
       this.#authState.isLoading = false;
@@ -387,17 +453,17 @@ class UserStore {
     this.#authState.isLoading = true;
     try {
       const userId = this.getUserId();
-      
+
       if (!userId) {
-        throw new Error('User ID not found');
+        throw new Error("User ID not found");
       }
 
       // Upload to Cloudinary
       const uploadResult = await uploadUserAvatar(file);
 
       // Update user avatar in database
-      await apiRequest('/api/users', {
-        method: 'PUT',
+      await apiRequest("/api/users", {
+        method: "PUT",
         body: JSON.stringify({
           userId,
           avatar: uploadResult.secure_url,
@@ -428,17 +494,17 @@ class UserStore {
     this.#authState.isLoading = true;
     try {
       const userId = this.getUserId();
-      
+
       if (!userId) {
-        throw new Error('User ID not found');
+        throw new Error("User ID not found");
       }
 
       // Upload to Cloudinary
       const uploadResult = await uploadUserBanner(file);
 
       // Update user banner in database
-      await apiRequest('/api/users', {
-        method: 'PUT',
+      await apiRequest("/api/users", {
+        method: "PUT",
         body: JSON.stringify({
           userId,
           banner: uploadResult.secure_url,
@@ -476,13 +542,13 @@ class UserStore {
 
     try {
       const userId = this.getUserId();
-      
+
       if (!userId) {
-        throw new Error('User ID not found');
+        throw new Error("User ID not found");
       }
 
-      const response = await apiRequest('/api/ratings', {
-        method: 'POST',
+      const response = await apiRequest("/api/ratings", {
+        method: "POST",
         body: JSON.stringify({
           userId,
           mediaId,
@@ -495,8 +561,10 @@ class UserStore {
       });
 
       // Update local state
-      const existingRatingIndex = this.#userRatings.findIndex(r => r.mediaId === mediaId);
-      
+      const existingRatingIndex = this.#userRatings.findIndex(
+        (r) => r.mediaId === mediaId,
+      );
+
       const ratingItem: Rating = {
         id: response.rating._id,
         userId,
@@ -524,7 +592,7 @@ class UserStore {
       const userResponse = await apiRequest(`/api/users?userId=${userId}`);
       this.#authState.user.averageRating = userResponse.user.averageRating;
     } catch (error) {
-      console.error('Error adding rating:', error);
+      console.error("Error adding rating:", error);
       throw error;
     }
   }
@@ -549,22 +617,25 @@ class UserStore {
   async deleteRating(ratingId: string): Promise<void> {
     if (!this.#authState.user) return;
 
-    const ratingToDelete = this.#userRatings.find(r => r.id === ratingId);
+    const ratingToDelete = this.#userRatings.find((r) => r.id === ratingId);
     if (!ratingToDelete) return;
 
     try {
       const userId = this.getUserId();
-      
+
       if (!userId) {
-        throw new Error('User ID not found');
+        throw new Error("User ID not found");
       }
 
-      await apiRequest(`/api/ratings?userId=${userId}&mediaId=${ratingToDelete.mediaId}`, {
-        method: 'DELETE',
-      });
+      await apiRequest(
+        `/api/ratings?userId=${userId}&mediaId=${ratingToDelete.mediaId}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       // Remove from local state
-      const index = this.#userRatings.findIndex(r => r.id === ratingId);
+      const index = this.#userRatings.findIndex((r) => r.id === ratingId);
       if (index !== -1) {
         this.#userRatings.splice(index, 1);
         this.#authState.user.totalRatings--;
@@ -574,7 +645,7 @@ class UserStore {
       const userResponse = await apiRequest(`/api/users?userId=${userId}`);
       this.#authState.user.averageRating = userResponse.user.averageRating;
     } catch (error) {
-      console.error('Error deleting rating:', error);
+      console.error("Error deleting rating:", error);
       throw error;
     }
   }
@@ -592,13 +663,13 @@ class UserStore {
 
     try {
       const userId = this.getUserId();
-      
+
       if (!userId) {
-        throw new Error('User ID not found');
+        throw new Error("User ID not found");
       }
 
-      const addResponse = await apiRequest('/api/watchlist', {
-        method: 'POST',
+      const addResponse = await apiRequest("/api/watchlist", {
+        method: "POST",
         body: JSON.stringify({
           userId,
           mediaId,
@@ -627,7 +698,7 @@ class UserStore {
       this.#userWatchlist.unshift(watchlistItem);
       this.#authState.user.watchlistCount++;
     } catch (error) {
-      console.error('Error adding to watchlist:', error);
+      console.error("Error adding to watchlist:", error);
       throw error;
     }
   }
@@ -637,23 +708,25 @@ class UserStore {
 
     try {
       const userId = this.getUserId();
-      
+
       if (!userId) {
-        throw new Error('User ID not found');
+        throw new Error("User ID not found");
       }
 
       await apiRequest(`/api/watchlist?userId=${userId}&mediaId=${mediaId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       // Remove from local state
-      const index = this.#userWatchlist.findIndex(item => item.mediaId === mediaId);
+      const index = this.#userWatchlist.findIndex(
+        (item) => item.mediaId === mediaId,
+      );
       if (index !== -1) {
         this.#userWatchlist.splice(index, 1);
         this.#authState.user.watchlistCount--;
       }
     } catch (error) {
-      console.error('Error removing from watchlist:', error);
+      console.error("Error removing from watchlist:", error);
       throw error;
     }
   }
@@ -668,13 +741,13 @@ class UserStore {
 
     try {
       const userId = this.getUserId();
-      
+
       if (!userId) {
-        throw new Error('User ID not found');
+        throw new Error("User ID not found");
       }
 
-      const watchedResponse = await apiRequest('/api/watched', {
-        method: 'POST',
+      const watchedResponse = await apiRequest("/api/watched", {
+        method: "POST",
         body: JSON.stringify({
           userId,
           mediaId,
@@ -702,18 +775,375 @@ class UserStore {
       this.#authState.user.watchedCount++;
 
       // Remove from watchlist if it exists
-      const watchlistIndex = this.#userWatchlist.findIndex(item => item.mediaId === mediaId);
+      const watchlistIndex = this.#userWatchlist.findIndex(
+        (item) => item.mediaId === mediaId,
+      );
       if (watchlistIndex !== -1) {
         this.#userWatchlist.splice(watchlistIndex, 1);
         this.#authState.user.watchlistCount--;
       }
     } catch (error) {
-      console.error('Error marking as watched:', error);
+      console.error("Error marking as watched:", error);
       throw error;
     }
   }
 
-  // Collections
+  // Person ratings and favorites
+  async addPersonRating(
+    personId: string,
+    rating: number,
+    review?: string,
+    personName?: string,
+    personImage?: string,
+  ): Promise<void> {
+    if (!this.#authState.user) return;
+
+    try {
+      const userId = this.getUserId();
+
+      if (!userId) {
+        throw new Error("User ID not found");
+      }
+
+      const response = await apiRequest("/api/person-ratings", {
+        method: "POST",
+        body: JSON.stringify({
+          userId,
+          personId,
+          rating,
+          review,
+          personName: personName || `Person ${personId}`,
+          personImage,
+        }),
+      });
+
+      // Update local state
+      const existingIndex = this.#userPersonRatings.findIndex(
+        (r) => r.personId === personId,
+      );
+      const newRating = {
+        id: response.rating._id,
+        userId: response.rating.userId,
+        personId: response.rating.personId,
+        rating: response.rating.rating,
+        review: response.rating.review,
+        personName: response.rating.personName,
+        personImage: response.rating.personImage,
+        createdAt: new Date(response.rating.createdAt),
+        updatedAt: new Date(response.rating.updatedAt),
+      };
+
+      if (existingIndex >= 0) {
+        this.#userPersonRatings[existingIndex] = newRating;
+      } else {
+        this.#userPersonRatings.push(newRating);
+      }
+    } catch (error) {
+      console.error("Error adding person rating:", error);
+      throw error;
+    }
+  }
+
+  async deletePersonRating(personId: string): Promise<void> {
+    if (!this.#authState.user) return;
+
+    try {
+      const userId = this.getUserId();
+
+      if (!userId) {
+        throw new Error("User ID not found");
+      }
+
+      await apiRequest(
+        `/api/person-ratings?userId=${userId}&personId=${personId}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      // Update local state
+      this.#userPersonRatings = this.#userPersonRatings.filter(
+        (r) => r.personId !== personId,
+      );
+    } catch (error) {
+      console.error("Error deleting person rating:", error);
+      throw error;
+    }
+  }
+
+  async addPersonToFavorites(
+    personId: string,
+    personName: string,
+    personImage?: string,
+    personKnownFor?: string,
+  ): Promise<void> {
+    if (!this.#authState.user) return;
+
+    try {
+      const userId = this.getUserId();
+
+      if (!userId) {
+        throw new Error("User ID not found");
+      }
+
+      const response = await apiRequest("/api/person-favorites", {
+        method: "POST",
+        body: JSON.stringify({
+          userId,
+          personId,
+          personName,
+          personImage,
+          personKnownFor,
+        }),
+      });
+
+      // Update local state
+      const newFavorite = {
+        id: response.favorite._id,
+        userId: response.favorite.userId,
+        personId: response.favorite.personId,
+        personName: response.favorite.personName,
+        personImage: response.favorite.personImage,
+        personKnownFor: response.favorite.personKnownFor,
+        addedAt: new Date(response.favorite.addedAt),
+      };
+
+      this.#userPersonFavorites.push(newFavorite);
+    } catch (error) {
+      console.error("Error adding person to favorites:", error);
+      throw error;
+    }
+  }
+
+  async removePersonFromFavorites(personId: string): Promise<void> {
+    if (!this.#authState.user) return;
+
+    try {
+      const userId = this.getUserId();
+
+      if (!userId) {
+        throw new Error("User ID not found");
+      }
+
+      await apiRequest(
+        `/api/person-favorites?userId=${userId}&personId=${personId}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      // Update local state
+      this.#userPersonFavorites = this.#userPersonFavorites.filter(
+        (f) => f.personId !== personId,
+      );
+    } catch (error) {
+      console.error("Error removing person from favorites:", error);
+      throw error;
+    }
+  }
+
+  // Follow functionality
+  async followUser(followingId: string): Promise<void> {
+    if (!this.#authState.user && !browser) return;
+
+    try {
+      const followerId = this.getUserId();
+
+      if (!followerId) {
+        throw new Error("User ID not found");
+      }
+
+      console.log(`Following user: ${followerId} -> ${followingId}`);
+
+      const response = await apiRequest("/api/follows", {
+        method: "POST",
+        body: JSON.stringify({
+          followerId,
+          followingId,
+        }),
+      });
+
+      console.log("Follow response:", response);
+
+      if (response.success && response.follow) {
+        // Update local state
+        const newFollow = {
+          id: response.follow._id,
+          followerId: response.follow.followerId,
+          followingId: response.follow.followingId,
+          createdAt: new Date(response.follow.createdAt),
+          follower: this.#authState.user!,
+          following: {
+            id: followingId,
+            username: "unknown",
+            displayName: "Unknown User",
+            avatar: undefined,
+          },
+        };
+
+        this.#userFollows.push(newFollow);
+        console.log("Added to local follows:", this.#userFollows.length);
+
+        // Update user's following count
+        if (this.#authState.user) {
+          this.#authState.user.followingCount =
+            (this.#authState.user.followingCount || 0) + 1;
+        }
+
+        // Refresh notifications to show any new follow-related notifications
+        if (browser) {
+          try {
+            const { notificationStore } =
+              await import("./notification.svelte.js");
+            notificationStore.fetchNotifications();
+          } catch (notifError) {
+            console.warn("Failed to refresh notifications:", notifError);
+          }
+        }
+      } else {
+        console.error("Follow response missing success or follow data");
+        throw new Error("Failed to follow user - invalid response");
+      }
+    } catch (error) {
+      console.error("Error following user:", error);
+      throw error;
+    }
+  }
+
+  async unfollowUser(followingId: string): Promise<void> {
+    if (!this.#authState.user && !browser) return;
+
+    try {
+      const followerId = this.getUserId();
+
+      if (!followerId) {
+        throw new Error("User ID not found");
+      }
+
+      console.log(`Unfollowing user: ${followerId} -> ${followingId}`);
+
+      const response = await apiRequest(
+        `/api/follows?followerId=${followerId}&followingId=${followingId}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      console.log("Unfollow response:", response);
+
+      if (response.success) {
+        // Update local state
+        const beforeCount = this.#userFollows.length;
+        this.#userFollows = this.#userFollows.filter((f) => {
+          const targetId = f.followingId;
+          return (
+            targetId !== followingId && targetId?.toString() !== followingId
+          );
+        });
+
+        console.log(
+          `Removed from local follows: ${beforeCount} -> ${this.#userFollows.length}`,
+        );
+
+        // Update user's following count
+        if (this.#authState.user) {
+          this.#authState.user.followingCount = Math.max(
+            0,
+            (this.#authState.user.followingCount || 0) - 1,
+          );
+        }
+
+        // Refresh notifications
+        if (browser) {
+          try {
+            const { notificationStore } =
+              await import("./notification.svelte.js");
+            notificationStore.fetchNotifications();
+          } catch (notifError) {
+            console.warn("Failed to refresh notifications:", notifError);
+          }
+        }
+      } else {
+        console.error("Unfollow response missing success");
+        throw new Error("Failed to unfollow user - invalid response");
+      }
+    } catch (error) {
+      console.error("Error unfollowing user:", error);
+      throw error;
+    }
+  }
+
+  async checkIfFollowing(followingId: string): Promise<boolean> {
+    if (!this.#authState.user && !browser) return false;
+
+    try {
+      const followerId = this.getUserId();
+
+      if (!followerId) {
+        console.warn("No user ID found for follow check");
+        return false;
+      }
+
+      console.log(`Checking if ${followerId} follows ${followingId}`);
+
+      // First check local state
+      const localFollow = this.#userFollows.find((f) => {
+        const targetId = f.followingId;
+        return targetId === followingId || targetId.toString() === followingId;
+      });
+      if (localFollow) {
+        console.log("Found follow in local state");
+        return true;
+      }
+
+      // If not found locally, check with server
+      const response = await apiRequest(
+        `/api/follows?userId=${followerId}&type=following`,
+      );
+
+      console.log("Server follow response:", response);
+
+      if (!response.follows || response.follows.length === 0) {
+        console.log("No follows found on server");
+        return false;
+      }
+
+      const isFollowing = response.follows.some((follow: any) => {
+        const targetId =
+          follow.followingId?._id ||
+          follow.followingId?.id ||
+          follow.followingId;
+        const matches =
+          targetId === followingId || targetId?.toString() === followingId;
+        console.log(
+          `Comparing server follow: ${targetId} with target: ${followingId} = ${matches}`,
+        );
+        return matches;
+      });
+
+      console.log(`Final follow status: ${isFollowing}`);
+
+      // Update local state if we found follows on server
+      if (response.follows.length > 0) {
+        this.#userFollows = response.follows.map((follow: any) => ({
+          id: follow._id,
+          followerId: follow.followerId._id || follow.followerId,
+          followingId:
+            follow.followingId._id ||
+            follow.followingId.id ||
+            follow.followingId,
+          createdAt: new Date(follow.createdAt),
+          follower: follow.followerId,
+          following: follow.followingId,
+        }));
+      }
+
+      return isFollowing;
+    } catch (error) {
+      console.error("Error checking follow status:", error);
+      return false;
+    }
+  }
   async createCollection(
     name: string,
     description?: string,
@@ -722,9 +1152,9 @@ class UserStore {
     if (!this.#authState.user) throw new Error("Not authenticated");
 
     const userId = this.getUserId();
-    
+
     if (!userId) {
-      throw new Error('User ID not found');
+      throw new Error("User ID not found");
     }
 
     const collection: Collection = {
@@ -796,7 +1226,31 @@ class UserStore {
   // Private methods
   private getUserId(): string | null {
     if (!this.#authState.user) return null;
-    return this.#authState.user._id || this.#authState.user.id || null;
+    const userId = this.#authState.user._id || this.#authState.user.id;
+    if (userId) {
+      console.log("Got user ID from store:", userId);
+      return userId;
+    }
+
+    // Fallback: try to get from localStorage
+    if (browser) {
+      try {
+        const userData = localStorage.getItem("tvdom_user");
+        if (userData) {
+          const user = JSON.parse(userData);
+          const fallbackId = user._id || user.id;
+          if (fallbackId) {
+            console.log("Got user ID from localStorage fallback:", fallbackId);
+            return fallbackId;
+          }
+        }
+      } catch (error) {
+        console.warn("Failed to get user ID from localStorage:", error);
+      }
+    }
+
+    console.warn("No user ID found in store or localStorage");
+    return null;
   }
 
   private initializeFromStorage(): void {
@@ -818,16 +1272,24 @@ class UserStore {
 
     try {
       const userId = this.getUserId();
-      
+
       if (!userId) {
-        throw new Error('User ID not found');
+        throw new Error("User ID not found");
       }
 
       // Load user data from database
-      const [watchlistResponse, ratingsResponse, watchedResponse] = await Promise.all([
+      const [
+        watchlistResponse,
+        ratingsResponse,
+        watchedResponse,
+        personRatingsResponse,
+        personFavoritesResponse,
+      ] = await Promise.all([
         apiRequest(`/api/watchlist?userId=${userId}`),
         apiRequest(`/api/ratings?userId=${userId}`),
         apiRequest(`/api/watched?userId=${userId}`),
+        apiRequest(`/api/person-ratings?userId=${userId}`),
+        apiRequest(`/api/person-favorites?userId=${userId}`),
       ]);
 
       // Convert database items to local format
@@ -859,7 +1321,9 @@ class UserStore {
         dislikes: rating.dislikes,
         tags: rating.tags,
         rewatched: rating.rewatched,
-        watchedDate: rating.watchedDate ? new Date(rating.watchedDate) : undefined,
+        watchedDate: rating.watchedDate
+          ? new Date(rating.watchedDate)
+          : undefined,
       }));
 
       this.#userWatched = watchedResponse.watched.map((item: any) => ({
@@ -871,13 +1335,77 @@ class UserStore {
         rating: item.rating,
         isFavorite: item.isFavorite,
         rewatchCount: item.rewatchCount,
-        lastRewatchedAt: item.lastRewatchedAt ? new Date(item.lastRewatchedAt) : undefined,
+        lastRewatchedAt: item.lastRewatchedAt
+          ? new Date(item.lastRewatchedAt)
+          : undefined,
         mediaTitle: item.mediaTitle,
         mediaPoster: item.mediaPoster,
         seasonNumber: item.seasonNumber,
         episodeNumber: item.episodeNumber,
         progress: item.progress,
       }));
+
+      this.#userPersonRatings = personRatingsResponse.ratings.map(
+        (rating: any) => ({
+          id: rating._id,
+          userId: rating.userId,
+          personId: rating.personId,
+          rating: rating.rating,
+          review: rating.review,
+          personName: rating.personName,
+          personImage: rating.personImage,
+          createdAt: new Date(rating.createdAt),
+          updatedAt: new Date(rating.updatedAt),
+        }),
+      );
+
+      this.#userPersonFavorites = personFavoritesResponse.favorites.map(
+        (favorite: any) => ({
+          id: favorite._id,
+          userId: favorite.userId,
+          personId: favorite.personId,
+          personName: favorite.personName,
+          personImage: favorite.personImage,
+          personKnownFor: favorite.personKnownFor,
+          addedAt: new Date(favorite.addedAt),
+        }),
+      );
+
+      // Load follows data - both following and followers
+      try {
+        const [followingResponse, followersResponse] = await Promise.all([
+          apiRequest(`/api/follows?userId=${userId}&type=following`),
+          apiRequest(`/api/follows?userId=${userId}&type=followers`),
+        ]);
+
+        this.#userFollows =
+          followingResponse.follows?.map((follow: any) => ({
+            id: follow._id,
+            followerId: follow.followerId._id || follow.followerId,
+            followingId: follow.followingId._id || follow.followingId,
+            createdAt: new Date(follow.createdAt),
+            follower: follow.followerId,
+            following: follow.followingId,
+          })) || [];
+
+        this.#userFollowers =
+          followersResponse.follows?.map((follow: any) => ({
+            id: follow._id,
+            followerId: follow.followerId._id || follow.followerId,
+            followingId: follow.followingId._id || follow.followingId,
+            createdAt: new Date(follow.createdAt),
+            follower: follow.followerId,
+            following: follow.followingId,
+          })) || [];
+
+        console.log(
+          `Loaded ${this.#userFollows.length} following, ${this.#userFollowers.length} followers`,
+        );
+      } catch (error) {
+        console.warn("Failed to load follows:", error);
+        this.#userFollows = [];
+        this.#userFollowers = [];
+      }
 
       // Mock notifications for now
       this.#userNotifications = [
@@ -886,17 +1414,20 @@ class UserStore {
           userId,
           type: "follow",
           title: "Welcome to TVDom!",
-          message: "Start building your watchlist and rating movies and TV shows",
+          message:
+            "Start building your watchlist and rating movies and TV shows",
           isRead: false,
           createdAt: new Date(),
         },
       ];
     } catch (error) {
-      console.error('Error loading user data:', error);
+      console.error("Error loading user data:", error);
       // Fall back to empty arrays if API fails
       this.#userWatchlist = [];
       this.#userRatings = [];
       this.#userWatched = [];
+      this.#userPersonRatings = [];
+      this.#userPersonFavorites = [];
       this.#userNotifications = [];
     }
   }

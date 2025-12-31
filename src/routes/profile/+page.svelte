@@ -30,9 +30,27 @@
     }
   }
 
-  let activeTab = $state<"overview" | "watchlist" | "watched" | "reviews">(
+  let activeTab = $state<"overview" | "watchlist" | "watched" | "reviews" | "persons">(
     "overview"
   );
+
+  // Helper function to get proper poster URL
+  function getPosterUrl(mediaPoster?: string): string {
+    if (!mediaPoster) return '';
+    
+    // If it's already a full URL, return as-is
+    if (mediaPoster.startsWith('http')) {
+      return mediaPoster;
+    }
+    
+    // If it starts with '/', it's a TMDB path, construct the full URL
+    if (mediaPoster.startsWith('/')) {
+      return `https://image.tmdb.org/t/p/w500${mediaPoster}`;
+    }
+    
+    // Otherwise, assume it's a path without leading slash
+    return `https://image.tmdb.org/t/p/w500/${mediaPoster}`;
+  }
 </script>
 
 <svelte:head>
@@ -178,7 +196,7 @@
               <div class="flex items-center gap-6 text-center text-muted-foreground">
                 <div>
                   <div class="text-2xl font-bold text-foreground">
-                    {userStore.user.followerCount}
+                    {userStore.userFollowers.length}
                   </div>
                   <div class="text-sm">
                     Followers
@@ -186,7 +204,7 @@
                 </div>
                 <div>
                   <div class="text-2xl font-bold text-foreground">
-                    {userStore.user.followingCount}
+                    {userStore.userFollows.length}
                   </div>
                   <div class="text-sm">
                     Following
@@ -232,6 +250,14 @@
           >
             <Star class="w-4 h-4" />
             Reviews ({userStore.userRatings.length})
+          </Button>
+          <Button
+            variant={activeTab === 'persons' ? 'default' : 'ghost'}
+            onclick={() => activeTab = 'persons'}
+            class="flex items-center gap-2 px-6 py-4 text-sm font-medium rounded-none border-b-2 {activeTab === 'persons' ? 'border-primary' : 'border-transparent'} whitespace-nowrap"
+          >
+            <Users class="w-4 h-4" />
+            Persons ({userStore.userPersonFavorites.length + userStore.userPersonRatings.length})
           </Button>
         </nav>
       </Card.Root>
@@ -385,7 +411,7 @@
                       >
                         {#if item.mediaPoster}
                           <img
-                            src={item.mediaPoster}
+                            src={getPosterUrl(item.mediaPoster)}
                             alt="{item.mediaTitle} poster"
                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                           />
@@ -450,38 +476,38 @@
               {#each userStore.userWatched as item}
                 <div class="group cursor-pointer">
                   <div
-                    class="aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden mb-3"
+                    class="aspect-[2/3] bg-muted rounded-lg overflow-hidden mb-3"
                   >
                     {#if item.mediaPoster}
                       <img
-                        src={item.mediaPoster}
+                        src={getPosterUrl(item.mediaPoster)}
                         alt="{item.mediaTitle} poster"
                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                       />
                     {:else}
                       <div
-                        class="w-full h-full flex items-center justify-center"
+                        class="w-full h-full flex items-center justify-center text-muted-foreground"
                       >
                         {#if item.mediaType === "movie"}
-                          <Film class="w-8 h-8 text-gray-400" />
+                          <Film class="w-8 h-8" />
                         {:else}
-                          <Tv class="w-8 h-8 text-gray-400" />
+                          <Tv class="w-8 h-8" />
                         {/if}
                       </div>
                     {/if}
                   </div>
                   <h3
-                    class="text-sm font-medium  line-clamp-2 mb-1"
+                    class="text-sm font-medium line-clamp-2 mb-1"
                   >
                     {item.mediaTitle}
                   </h3>
-                  <p class="text-xs ">
+                  <p class="text-xs text-muted-foreground">
                     Watched {new Date(item.watchedAt).toLocaleDateString()}
                   </p>
                   {#if item.rating}
                     <div class="flex items-center gap-1 mt-1">
                       <Star class="w-3 h-3 text-yellow-500 fill-current" />
-                      <span class="text-xs "
+                      <span class="text-xs text-muted-foreground"
                         >{item.rating}/10</span
                       >
                     </div>
@@ -567,6 +593,127 @@
               <p>
                 Start rating movies and TV shows to see your reviews here
               </p>
+            </div>
+          {/if}
+        </div>
+      {:else if activeTab === "persons"}
+        <!-- Persons Tab -->
+        <div
+          class="bg-card rounded-xl shadow-sm border border-border p-6"
+        >
+          <h2 class="text-xl font-semibold mb-6">
+            People You Follow
+          </h2>
+          
+          <!-- Person Favorites Section -->
+          {#if userStore.userPersonFavorites.length > 0}
+            <div class="mb-8">
+              <h3 class="text-lg font-medium mb-4 flex items-center gap-2">
+                <Heart class="w-5 h-5 text-red-500" />
+                Favorite People ({userStore.userPersonFavorites.length})
+              </h3>
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {#each userStore.userPersonFavorites as favorite}
+                  <a href="/person/{favorite.personId}" class="group cursor-pointer">
+                    <div class="aspect-[2/3] bg-muted rounded-lg overflow-hidden mb-2">
+                      {#if favorite.personImage}
+                        <img
+                          src="https://image.tmdb.org/t/p/w300{favorite.personImage}"
+                          alt="{favorite.personName}"
+                          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        />
+                      {:else}
+                        <div class="w-full h-full flex items-center justify-center text-muted-foreground">
+                          <Users class="w-8 h-8" />
+                        </div>
+                      {/if}
+                    </div>
+                    <h4 class="text-sm font-medium line-clamp-2 mb-1">
+                      {favorite.personName}
+                    </h4>
+                    {#if favorite.personKnownFor}
+                      <p class="text-xs text-muted-foreground">
+                        {favorite.personKnownFor}
+                      </p>
+                    {/if}
+                    <p class="text-xs text-muted-foreground">
+                      Added {new Date(favorite.addedAt).toLocaleDateString()}
+                    </p>
+                  </a>
+                {/each}
+              </div>
+            </div>
+          {/if}
+
+          <!-- Person Ratings Section -->
+          {#if userStore.userPersonRatings.length > 0}
+            <div class="mb-8">
+              <h3 class="text-lg font-medium mb-4 flex items-center gap-2">
+                <Star class="w-5 h-5 text-yellow-500" />
+                Rated People ({userStore.userPersonRatings.length})
+              </h3>
+              <div class="space-y-4">
+                {#each userStore.userPersonRatings as rating}
+                  <div class="border border-border rounded-lg p-4">
+                    <div class="flex items-start gap-4">
+                      <a href="/person/{rating.personId}" class="flex-shrink-0">
+                        <div class="w-16 h-24 bg-muted rounded-lg overflow-hidden">
+                          {#if rating.personImage}
+                            <img
+                              src="https://image.tmdb.org/t/p/w185{rating.personImage}"
+                              alt="{rating.personName}"
+                              class="w-full h-full object-cover"
+                            />
+                          {:else}
+                            <div class="w-full h-full flex items-center justify-center text-muted-foreground">
+                              <Users class="w-6 h-6" />
+                            </div>
+                          {/if}
+                        </div>
+                      </a>
+                      <div class="flex-1">
+                        <div class="flex items-center justify-between mb-2">
+                          <a href="/person/{rating.personId}" class="text-lg font-medium hover:text-primary">
+                            {rating.personName}
+                          </a>
+                          <div class="flex items-center gap-1">
+                            <Star class="w-4 h-4 text-yellow-500 fill-current" />
+                            <span class="text-sm font-medium">{rating.rating}/10</span>
+                          </div>
+                        </div>
+                        {#if rating.review}
+                          <p class="text-sm text-muted-foreground mb-2">
+                            {rating.review}
+                          </p>
+                        {/if}
+                        <p class="text-xs text-muted-foreground">
+                          Rated {new Date(rating.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/if}
+
+          <!-- Empty State -->
+          {#if userStore.userPersonFavorites.length === 0 && userStore.userPersonRatings.length === 0}
+            <div class="text-center py-12 text-muted-foreground">
+              <Users class="w-16 h-16 mx-auto mb-4" />
+              <h3 class="text-lg font-semibold mb-2">
+                No people yet
+              </h3>
+              <p class="mb-4">
+                Start exploring actors, directors, and other people in the entertainment industry
+              </p>
+              <a
+                href="/search"
+                class="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-colors"
+              >
+                <Users class="w-4 h-4" />
+                Discover People
+              </a>
             </div>
           {/if}
         </div>

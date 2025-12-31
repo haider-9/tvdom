@@ -4,29 +4,34 @@
     import Navbar from "$lib/components/Navbar.svelte";
     import Footer from "$lib/components/Footer.svelte";
     import favicon from "$lib/assets/favicon.svg";
+    import { onMount } from "svelte";
+    import { browser } from "$app/environment";
 
     // Import user authentication components
     import LoginModal from "$lib/components/auth/LoginModal.svelte";
     import RegisterModal from "$lib/components/auth/RegisterModal.svelte";
     import UserProfile from "$lib/components/user/UserProfile.svelte";
     import { userStore } from "$lib/stores/user.svelte.js";
-    
-    // Initialize theme store
+
+    // Initialize theme store - this ensures it's loaded on every page
     import { themeStore } from "$lib/stores/theme.svelte.js";
 
     let { children } = $props();
+
+    // Theme is now handled automatically by the theme store
+    // No manual initialization needed in layout
 </script>
 
 <svelte:head>
-  <link rel="icon" href={favicon} />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link
-    rel="preconnect"
-    href="https://fonts.gstatic.com"
-    crossorigin="anonymous"
-  />
-  <link
-    href="https://fonts.googleapis.com/css2
+    <link rel="icon" href={favicon} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin="anonymous"
+    />
+    <link
+        href="https://fonts.googleapis.com/css2
       ?family=Montserrat:wght@300;400;500;600;700
       &family=Fira+Code:wght@400;500
       &family=Oxanium:wght@400;500;600;700
@@ -37,8 +42,8 @@
       &family=Roboto+Mono:wght@400;500;600
       &family=Lora:wght@400;500;600;700
       &display=swap"
-    rel="stylesheet"
-  />
+        rel="stylesheet"
+    />
 </svelte:head>
 
 <Toaster richColors position="top-right" />

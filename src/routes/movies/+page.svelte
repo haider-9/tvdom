@@ -1,18 +1,13 @@
 <script lang="ts">
 import MediaCard from '$lib/components/MediaCard.svelte';
 import { Button } from '$lib/components/ui/button';
-import { Badge } from '$lib/components/ui/badge';
-import { Film, TrendingUp, Star, Calendar, Play, ChevronRightIcon, ChevronLeft } from 'lucide-svelte';
+import { Film, ChevronRightIcon, ChevronLeft } from 'lucide-svelte';
 import type { PageData } from './$types';
 
 let { data }: { data: PageData } = $props();
 
 const sections = [
   { id: 'popular', label: 'Popular', icon: Film },
-  { id: 'trending', label: 'Trending', icon: TrendingUp },
-  { id: 'top_rated', label: 'Top Rated', icon: Star },
-  { id: 'now_playing', label: 'Now Playing', icon: Play },
-  { id: 'upcoming', label: 'Upcoming', icon: Calendar }
 ];
 
 const sectionTitle = sections.find(s => s.id === data.currentSection)?.label || 'Popular';
@@ -39,21 +34,7 @@ const sectionTitle = sections.find(s => s.id === data.currentSection)?.label || 
 				</p>
 			</div>
 
-			<!-- Section tabs -->
-			<div class="flex flex-wrap gap-2 rounded-full bg-card/80 px-1 py-1 border border-border/80">
-				{#each sections as section}
-					{@const Icon = section.icon}
-					<a href={`/movies?section=${section.id}`}>
-						<Button
-							variant={data.currentSection === section.id ? 'default' : 'ghost'}
-							class="flex items-center gap-1.5 rounded-full px-3 md:px-4 py-2 text-xs md:text-sm"
-						>
-							<Icon class="w-4 h-4" />
-							<span>{section.label}</span>
-						</Button>
-					</a>
-				{/each}
-			</div>
+			
 		</section>
 
 		<!-- Results grid -->
@@ -94,25 +75,6 @@ const sectionTitle = sections.find(s => s.id === data.currentSection)?.label || 
 				</div>
 			{/if}
 		</section>
-
-		<!-- Genres row -->
-		{#if data.genres.length > 0}
-			<section class="space-y-3">
-				<h2 class="text-base md:text-lg font-medium text-foreground">Browse by genre</h2>
-				<div class="flex flex-wrap gap-2">
-					{#each data.genres as genre}
-						<a href={`/movies?genre=${genre.id}`} class="inline-flex">
-							<Badge
-								variant="outline"
-								class="rounded-full px-3 py-1 text-xs md:text-sm bg-card/60 hover:bg-primary/10 cursor-pointer"
-							>
-								{genre.name}
-							</Badge>
-						</a>
-					{/each}
-				</div>
-			</section>
-		{/if}
 	</main>
 </div>
 

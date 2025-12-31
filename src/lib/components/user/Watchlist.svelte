@@ -145,6 +145,7 @@
             item.mediaId,
             item.mediaType,
             item.mediaTitle,
+            item.mediaPoster
         );
     }
 
