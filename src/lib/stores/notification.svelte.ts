@@ -119,6 +119,7 @@ class NotificationStore {
       if (response.notifications) {
         this.#notifications = response.notifications.map((n: any) => ({
           ...n,
+          id: n._id || n.id, // Ensure we have an id field
           createdAt: new Date(n.createdAt),
         }));
 
@@ -143,6 +144,7 @@ class NotificationStore {
       if (response.activities) {
         this.#recentActivities = response.activities.map((a: any) => ({
           ...a,
+          id: a._id || a.id, // Ensure we have an id field
           createdAt: new Date(a.createdAt),
         }));
       }
@@ -238,6 +240,7 @@ class NotificationStore {
       if (response.notification) {
         const newNotification = {
           ...response.notification,
+          id: response.notification._id || response.notification.id, // Ensure we have an id field
           createdAt: new Date(response.notification.createdAt),
         };
 

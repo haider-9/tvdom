@@ -2,7 +2,7 @@ import { connectToDatabase } from '$lib/server/database';
 import { User } from '$lib/server/models/User';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, cookies }) => {
   const query = url.searchParams.get('q') || '';
   const page = parseInt(url.searchParams.get('page') || '1');
   const limit = 20;
@@ -10,6 +10,18 @@ export const load: PageServerLoad = async ({ url }) => {
 
   try {
     await connectToDatabase();
+
+    // Get current user ID from cookies to exclude them from results
+    let currentUserId = null;
+    try {
+      const userCookie = cookies.get('tvdom_user');
+      if (userCookie) {
+        const userData = JSON.parse(decodeURIComponent(userCookie));
+        currentUserId = userData._id || userData.id;
+      }
+    } catch (error) {
+      console.warn('Failed to parse user cookie:', error);
+    }
 
     let users = [];
     let totalUsers = 0;
@@ -24,7 +36,8 @@ export const load: PageServerLoad = async ({ url }) => {
           { displayName: searchRegex },
           { email: searchRegex }
         ],
-        isPrivate: { $ne: true } // Only show public profiles
+        isPrivate: { $ne: true }, // Only show public profiles
+        ...(currentUserId && { _id: { $ne: currentUserId } }) // Exclude current user
       };
 
       users = await User.find(searchQuery)
@@ -37,14 +50,19 @@ export const load: PageServerLoad = async ({ url }) => {
       totalUsers = await User.countDocuments(searchQuery);
     } else {
       // Show popular users when no search query
-      users = await User.find({ isPrivate: { $ne: true } })
+      const baseQuery = { 
+        isPrivate: { $ne: true },
+        ...(currentUserId && { _id: { $ne: currentUserId } }) // Exclude current user
+      };
+
+      users = await User.find(baseQuery)
         .select('-passwordHash -email')
         .sort({ totalRatings: -1, followerCount: -1 })
         .skip(skip)
         .limit(limit)
         .lean();
 
-      totalUsers = await User.countDocuments({ isPrivate: { $ne: true } });
+      totalUsers = await User.countDocuments(baseQuery);
     }
 
     return {
