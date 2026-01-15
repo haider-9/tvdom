@@ -1,9 +1,13 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { browser } from "$app/environment";
+  import { page } from "$app/stores";
+  import { onMount } from "svelte";
   import { Monitor } from "lucide-svelte";
   import { Button } from "$lib/components/ui/button";
   import * as Card from "$lib/components/ui/card";
   import * as Tooltip from "$lib/components/ui/tooltip";
+  import { userStore } from "$lib/stores/user.svelte";
   import type { PageData } from "./$types";
 
   let { data }: { data: PageData } = $props();
@@ -20,6 +24,135 @@
   let selectedEpisode = $state(1);
   let autoplay = $state(true);
   let videoEnded = $state(false);
+  let watchingTracked = $state(false);
+  let hasLoadedProgress = $state(false);
+
+  // Load saved progress on mount
+  onMount(() => {
+    if (browser && mediaType === 'tv') {
+      // First check URL params
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlSeason = urlParams.get('s');
+      const urlEpisode = urlParams.get('e');
+      
+      if (urlSeason && urlEpisode) {
+        selectedSeason = parseInt(urlSeason);
+        selectedEpisode = parseInt(urlEpisode);
+        console.log('Loaded from URL:', { season: selectedSeason, episode: selectedEpisode });
+      } else {
+        // Fall back to localStorage
+        const savedProgress = localStorage.getItem(`watch-${details.id}`);
+        if (savedProgress) {
+          try {
+            const { season, episode } = JSON.parse(savedProgress);
+            if (season && episode) {
+              selectedSeason = season;
+              selectedEpisode = episode;
+              console.log('Loaded from localStorage:', { season, episode });
+            }
+          } catch (e) {
+            console.error('Error loading saved progress:', e);
+          }
+        }
+      }
+      hasLoadedProgress = true;
+    }
+  });
+
+  // Save progress when episode changes (only after initial load)
+  $effect(() => {
+    if (browser && mediaType === 'tv' && hasLoadedProgress) {
+      localStorage.setItem(`watch-${details.id}`, JSON.stringify({
+        season: selectedSeason,
+        episode: selectedEpisode
+      }));
+      
+      // Update URL without reloading
+      const url = new URL(window.location.href);
+      url.searchParams.set('s', selectedSeason.toString());
+      url.searchParams.set('e', selectedEpisode.toString());
+      window.history.replaceState({}, '', url);
+      
+      console.log('Saved progress:', { season: selectedSeason, episode: selectedEpisode });
+    }
+  });
+
+  // Track currently watching
+  async function trackWatching() {
+    if (watchingTracked || !browser) return;
+
+    try {
+      const userId = userStore.user?._id || userStore.user?.id;
+      if (!userId) {
+        console.log('No userId found, cannot track watching');
+        return;
+      }
+
+      console.log('Tracking watching:', {
+        userId,
+        mediaId: details.id,
+        mediaType,
+        season: selectedSeason,
+        episode: selectedEpisode
+      });
+
+      const response = await fetch('/api/currently-watching', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          mediaId: details.id,
+          mediaType,
+          mediaTitle: title,
+          mediaPoster: details.poster_path,
+          season: mediaType === 'tv' ? selectedSeason : undefined,
+          episode: mediaType === 'tv' ? selectedEpisode : undefined
+        })
+      });
+
+      const result = await response.json();
+      console.log('Track watching response:', result);
+
+      watchingTracked = true;
+    } catch (error) {
+      console.error('Error tracking watching:', error);
+    }
+  }
+
+  // Stop tracking when leaving
+  async function stopTracking() {
+    if (!watchingTracked || !browser) return;
+
+    try {
+      const userId = userStore.user?._id || userStore.user?.id;
+      if (!userId) return;
+
+      await fetch(`/api/currently-watching?userId=${userId}&mediaId=${details.id}`, {
+        method: 'DELETE'
+      });
+    } catch (error) {
+      console.error('Error stopping tracking:', error);
+    }
+  }
+
+  // Track when player loads
+  $effect(() => {
+    if (!isPlayerLoading && userStore.isAuthenticated) {
+      console.log('Player loaded, tracking watching');
+      trackWatching();
+    }
+  });
+
+  // Update tracking when episode changes (reset watchingTracked flag)
+  $effect(() => {
+    if (mediaType === 'tv') {
+      console.log('Episode changed to S' + selectedSeason + 'E' + selectedEpisode);
+      watchingTracked = false; // Reset flag so tracking updates
+      if (!isPlayerLoading && userStore.isAuthenticated) {
+        trackWatching();
+      }
+    }
+  });
 
   // Get episode count for current season
   const currentSeasonEpisodes = $derived(() => {
@@ -192,8 +325,9 @@
     }
   }
 
-  function goBack() {
-    goto(`/${type}/${details.id}`);
+  // Cleanup on unmount
+  if (browser) {
+    window.addEventListener('beforeunload', stopTracking);
   }
 
   // Listen for video end events from iframe (if supported by the player)
@@ -392,16 +526,6 @@
     background: hsl(var(--background));
   }
 
-  .watch-header {
-    position: fixed;
-    top: 4rem;
-    left: 0;
-    right: 0;
-    z-index: 40;
-    background: hsl(var(--background));
-    border-bottom: 1px solid hsl(var(--border));
-  }
-
   .container {
     max-width: 1280px;
     margin: 0 auto;
@@ -417,112 +541,6 @@
   @media (min-width: 1024px) {
     .container {
       padding: 0 2rem;
-    }
-  }
-
-  .header-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 0;
-    gap: 0.75rem;
-  }
-
-  @media (min-width: 640px) {
-    .header-content {
-      padding: 1rem 0;
-      gap: 1rem;
-    }
-  }
-
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex: 1;
-    min-width: 0;
-  }
-
-  @media (min-width: 640px) {
-    .header-left {
-      gap: 1rem;
-    }
-  }
-
-  .back-btn,
-  .info-btn {
-    flex-shrink: 0;
-  }
-
-  .back-text,
-  .info-text {
-    margin-left: 0.5rem;
-  }
-
-  @media (max-width: 639px) {
-    .back-text,
-    .info-text {
-      display: none;
-    }
-  }
-
-  .title-section {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    min-width: 0;
-  }
-
-  .header-poster {
-    width: 2rem;
-    height: 3rem;
-    border-radius: 0.25rem;
-    object-fit: cover;
-    flex-shrink: 0;
-    display: none;
-  }
-
-  @media (min-width: 640px) {
-    .header-poster {
-      display: block;
-      width: 2.5rem;
-      height: 3.5rem;
-    }
-  }
-
-  .title-info {
-    min-width: 0;
-  }
-
-  .watch-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: hsl(var(--foreground));
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  @media (min-width: 640px) {
-    .watch-title {
-      font-size: 1rem;
-    }
-  }
-
-  @media (min-width: 768px) {
-    .watch-title {
-      font-size: 1.125rem;
-    }
-  }
-
-  .episode-info {
-    font-size: 0.75rem;
-    color: hsl(var(--muted-foreground));
-  }
-
-  @media (min-width: 640px) {
-    .episode-info {
-      font-size: 0.875rem;
     }
   }
 
@@ -546,58 +564,6 @@
     .player-wrapper {
       margin-bottom: 1.5rem;
     }
-  }
-
-  .player-card {
-    background: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
-    border-radius: 0.5rem;
-    overflow: hidden;
-  }
-
-  .player-content {
-    padding: 0;
-    position: relative;
-    background: black;
-  }
-
-  .player-loading {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.8);
-    z-index: 10;
-    gap: 1rem;
-  }
-
-  .spinner {
-    width: 2.5rem;
-    height: 2.5rem;
-    border: 3px solid hsl(var(--primary));
-    border-top-color: transparent;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @media (min-width: 640px) {
-    .spinner {
-      width: 3rem;
-      height: 3rem;
-    }
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  .loading-text {
-    color: white;
-    font-size: 0.875rem;
   }
 
   .player-container {
@@ -634,53 +600,6 @@
     }
   }
 
-  .server-card,
-  .info-card {
-    background: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
-    border-radius: 0.5rem;
-  }
-
-  .server-card :global(.card-header),
-  .info-card :global(.card-header) {
-    padding: 1rem;
-  }
-
-  @media (min-width: 640px) {
-    .server-card :global(.card-header),
-    .info-card :global(.card-header) {
-      padding: 1.25rem;
-    }
-  }
-
-  .server-card :global(.card-content),
-  .info-card :global(.card-content) {
-    padding: 1rem;
-    padding-top: 0;
-  }
-
-  @media (min-width: 640px) {
-    .server-card :global(.card-content),
-    .info-card :global(.card-content) {
-      padding: 1.25rem;
-      padding-top: 0;
-    }
-  }
-
-  .card-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-  }
-
-  @media (min-width: 640px) {
-    .card-title {
-      font-size: 1rem;
-    }
-  }
-
   .server-buttons {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -705,69 +624,6 @@
     }
   }
 
-  .server-btn {
-    width: 100%;
-    font-size: 0.875rem;
-  }
-
-  .status-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .status-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .status-dot {
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .status-green {
-    background: hsl(142, 76%, 36%);
-  }
-
-  .status-blue {
-    background: hsl(221, 83%, 53%);
-  }
-
-  .status-purple {
-    background: hsl(262, 83%, 58%);
-  }
-
-  .status-text {
-    font-size: 0.875rem;
-    color: hsl(var(--muted-foreground));
-  }
-
-  .playback-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .control-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.75rem;
-    border-radius: 0.375rem;
-    background: hsl(var(--muted) / 0.3);
-  }
-
-  .control-text {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: hsl(var(--foreground));
-  }
-
   .episode-nav {
     display: flex;
     align-items: center;
@@ -783,19 +639,6 @@
   @media (min-width: 640px) {
     .episode-nav {
       margin-bottom: 1.5rem;
-    }
-  }
-
-  .nav-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-  }
-
-  @media (min-width: 640px) {
-    .nav-btn {
-      font-size: 1rem;
     }
   }
 
@@ -908,18 +751,6 @@
   @media (min-width: 640px) {
     .episode-buttons {
       max-height: 16rem;
-    }
-  }
-
-  .episode-btn {
-    width: 100%;
-    font-weight: 600;
-    font-size: 0.875rem;
-  }
-
-  @media (min-width: 640px) {
-    .episode-btn {
-      font-size: 1rem;
     }
   }
 </style>

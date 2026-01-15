@@ -1,5 +1,6 @@
 <script lang="ts">
   import { userStore } from "$lib/stores/user.svelte.js";
+  import CurrentlyWatching from "$lib/components/CurrentlyWatching.svelte";
   import {
     User,
     Mail,
@@ -268,6 +269,9 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <!-- Stats Column -->
           <div class="space-y-6">
+            <!-- Currently Watching -->
+            <CurrentlyWatching userId={userStore.user?._id || userStore.user?.id} />
+
             <!-- Quick Stats -->
             <div
               class="bg-card rounded-xl shadow-sm border border-border p-6"
