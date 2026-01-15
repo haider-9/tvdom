@@ -441,7 +441,7 @@
 						Gallery
 					</h2>
 				</div>
-				<div class="overflow-x-auto border scrollbar-hide -mx-4 md:mx-0">
+				<div class="overflow-x-auto  scrollbar-hide -mx-4 md:mx-0">
 					<div class="flex gap-4 px-4 md:px-0 mt-4">
 						{#each allImages as img, i}
 							<button
