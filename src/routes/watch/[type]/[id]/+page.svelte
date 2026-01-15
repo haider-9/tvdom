@@ -3,6 +3,7 @@
   import { Monitor } from "lucide-svelte";
   import { Button } from "$lib/components/ui/button";
   import * as Card from "$lib/components/ui/card";
+  import * as Tooltip from "$lib/components/ui/tooltip";
   import type { PageData } from "./$types";
 
   let { data }: { data: PageData } = $props();
@@ -30,6 +31,26 @@
     }
     return 0;
   });
+
+  // Get current season data
+  const currentSeasonData = $derived(() => {
+    if (mediaType === "tv" && seasons) {
+      return seasons.find((s: any) => s.season_number === selectedSeason);
+    }
+    return null;
+  });
+
+  // Get episode title
+  function getEpisodeTitle(episodeNumber: number): string {
+    const seasonData = currentSeasonData();
+    if (seasonData && seasonData.episodes) {
+      const episode = seasonData.episodes.find(
+        (ep: any) => ep.episode_number === episodeNumber
+      );
+      return episode?.name || `Episode ${episodeNumber}`;
+    }
+    return `Episode ${episodeNumber}`;
+  }
 
   // Check if there's a next episode
   const hasNextEpisode = $derived(() => {
@@ -315,15 +336,22 @@
             <Card.Content>
               <div class="season-buttons">
                 {#each seasons as season}
-                  <Button
-                    variant={selectedSeason === season.season_number
-                      ? "default"
-                      : "outline"}
-                    onclick={() => handleSeasonChange(season.season_number)}
-                    class="episode-btn"
-                  >
-                    {season.season_number}
-                  </Button>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger>
+                      <Button
+                        variant={selectedSeason === season.season_number
+                          ? "default"
+                          : "outline"}
+                        onclick={() => handleSeasonChange(season.season_number)}
+                        class="episode-btn"
+                      >
+                        {season.season_number}
+                      </Button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>
+                      <p class="font-medium text-sm">{season.name || `Season ${season.season_number}`}</p>
+                    </Tooltip.Content>
+                  </Tooltip.Root>
                 {/each}
               </div>
             </Card.Content>
@@ -337,13 +365,20 @@
             <Card.Content>
               <div class="episode-buttons">
                 {#each Array(currentSeasonEpisodes()) as _, i}
-                  <Button
-                    variant={selectedEpisode === i + 1 ? "default" : "outline"}
-                    onclick={() => handleEpisodeChange(i + 1)}
-                    class="episode-btn"
-                  >
-                    {i + 1}
-                  </Button>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger>
+                      <Button
+                        variant={selectedEpisode === i + 1 ? "default" : "outline"}
+                        onclick={() => handleEpisodeChange(i + 1)}
+                        class="episode-btn"
+                      >
+                        {i + 1}
+                      </Button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>
+                      <p class="font-medium text-sm">{getEpisodeTitle(i + 1)}</p>
+                    </Tooltip.Content>
+                  </Tooltip.Root>
                 {/each}
               </div>
             </Card.Content>

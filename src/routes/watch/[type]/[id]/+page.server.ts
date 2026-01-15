@@ -38,7 +38,13 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
 								return {
 									season_number: season.season_number,
 									episode_count: seasonData.episodes?.length || 0,
-									name: season.name
+									name: season.name,
+									episodes: seasonData.episodes?.map((ep: any) => ({
+										episode_number: ep.episode_number,
+										name: ep.name,
+										overview: ep.overview,
+										air_date: ep.air_date
+									})) || []
 								};
 							}
 						} catch (err) {
@@ -47,7 +53,8 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
 						return {
 							season_number: season.season_number,
 							episode_count: season.episode_count || 0,
-							name: season.name
+							name: season.name,
+							episodes: []
 						};
 					})
 			);
