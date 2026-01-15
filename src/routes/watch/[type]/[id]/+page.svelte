@@ -221,18 +221,13 @@
     <div class="container">
       <!-- Video Player -->
       <div class="player-wrapper">
-        <Card.Root class="player-card">
-          <Card.Content class="player-content p-0">
-            <!-- {#if isPlayerLoading}
-              <div class="player-loading">
-                <div class="spinner"></div>
-                <p class="loading-text">Loading...</p>
-              </div>
-            {/if} -->
-            <div class="player-container">
+        <Card.Root class="player-card overflow-hidden">
+          <Card.Content class="player-content  p-0">
+         
+            <div class="player-container ">
               <iframe
                 src={getStreamUrl()}
-                class="player-iframe"
+                class="player-iframe "
                 frameborder="0"
                 allowfullscreen
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
