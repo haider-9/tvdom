@@ -11,6 +11,7 @@
         LogOut,
         User,
         ChevronDown,
+        MessageSquare,
     } from "lucide-svelte";
     import logoUrl from "$lib/assets/logo.png";
     import { Dialog as DialogPrimitive } from "bits-ui";
@@ -130,6 +131,14 @@
                 >
                     <User class="w-4 h-4" />
                     <span>Users</span>
+                </a>
+
+                <a
+                    href="/community"
+                    class="text-sm text-foreground hover:text-primary transition-colors flex items-center gap-2"
+                >
+                    <MessageSquare class="w-4 h-4" />
+                    <span>Community</span>
                 </a>
 
                 <!-- Auth section -->
@@ -360,6 +369,14 @@
                                 >
                                     <User class="w-5 h-5" />
                                     <span>Users</span>
+                                </a>
+
+                                <a
+                                    href="/community"
+                                    class="flex items-center gap-3 p-2 rounded-md hover:bg-accent/5"
+                                >
+                                    <MessageSquare class="w-5 h-5" />
+                                    <span>Community</span>
                                 </a>
 
                                 <!-- Auth section -->
