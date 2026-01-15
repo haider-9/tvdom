@@ -223,12 +223,12 @@
       <div class="player-wrapper">
         <Card.Root class="player-card">
           <Card.Content class="player-content p-0">
-            {#if isPlayerLoading}
+            <!-- {#if isPlayerLoading}
               <div class="player-loading">
                 <div class="spinner"></div>
                 <p class="loading-text">Loading...</p>
               </div>
-            {/if}
+            {/if} -->
             <div class="player-container">
               <iframe
                 src={getStreamUrl()}
@@ -327,63 +327,65 @@
 
       <!-- Season & Episode Selection (TV Shows Only) -->
       {#if mediaType === "tv" && seasons && seasons.length > 0}
-        <div class="episode-grid *:p-4">
-          <!-- Season Selection -->
-          <Card.Root>
-            <Card.Header>
-              <Card.Title>Season</Card.Title>
-            </Card.Header>
-            <Card.Content>
-              <div class="season-buttons">
-                {#each seasons as season}
-                  <Tooltip.Root>
-                    <Tooltip.Trigger>
-                      <Button
-                        variant={selectedSeason === season.season_number
-                          ? "default"
-                          : "outline"}
-                        onclick={() => handleSeasonChange(season.season_number)}
-                        class="episode-btn"
-                      >
-                        {season.season_number}
-                      </Button>
-                    </Tooltip.Trigger>
-                    <Tooltip.Content>
-                      <p class="font-medium text-sm">{season.name || `Season ${season.season_number}`}</p>
-                    </Tooltip.Content>
-                  </Tooltip.Root>
-                {/each}
-              </div>
-            </Card.Content>
-          </Card.Root>
+        <Tooltip.Provider>
+          <div class="episode-grid *:p-4">
+            <!-- Season Selection -->
+            <Card.Root>
+              <Card.Header>
+                <Card.Title>Season</Card.Title>
+              </Card.Header>
+              <Card.Content>
+                <div class="season-buttons">
+                  {#each seasons as season}
+                    <Tooltip.Root>
+                      <Tooltip.Trigger>
+                        <Button
+                          variant={selectedSeason === season.season_number
+                            ? "default"
+                            : "outline"}
+                          onclick={() => handleSeasonChange(season.season_number)}
+                          class="episode-btn"
+                        >
+                          {season.season_number}
+                        </Button>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>
+                        <p class="font-medium text-sm">{season.name || `Season ${season.season_number}`}</p>
+                      </Tooltip.Content>
+                    </Tooltip.Root>
+                  {/each}
+                </div>
+              </Card.Content>
+            </Card.Root>
 
-          <!-- Episode Selection -->
-          <Card.Root>
-            <Card.Header>
-              <Card.Title>Episode</Card.Title>
-            </Card.Header>
-            <Card.Content>
-              <div class="episode-buttons">
-                {#each Array(currentSeasonEpisodes()) as _, i}
-                  <Tooltip.Root>
-                    <Tooltip.Trigger>
-                      <Button
-                        variant={selectedEpisode === i + 1 ? "default" : "outline"}
-                        onclick={() => handleEpisodeChange(i + 1)}
-                        class="episode-btn"
-                      >
-                        {i + 1}
-                      </Button>
-                    </Tooltip.Trigger>
-                    <Tooltip.Content>
-                      <p class="font-medium text-sm">{getEpisodeTitle(i + 1)}</p>
-                    </Tooltip.Content>
-                  </Tooltip.Root>
-                {/each}
-              </div>
-            </Card.Content>
-          </Card.Root>
-        </div>
+            <!-- Episode Selection -->
+            <Card.Root>
+              <Card.Header>
+                <Card.Title>Episode</Card.Title>
+              </Card.Header>
+              <Card.Content>
+                <div class="episode-buttons">
+                  {#each Array(currentSeasonEpisodes()) as _, i}
+                    <Tooltip.Root>
+                      <Tooltip.Trigger>
+                        <Button
+                          variant={selectedEpisode === i + 1 ? "default" : "outline"}
+                          onclick={() => handleEpisodeChange(i + 1)}
+                          class="episode-btn"
+                        >
+                          {i + 1}
+                        </Button>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>
+                        <p class="font-medium text-sm">{getEpisodeTitle(i + 1)}</p>
+                      </Tooltip.Content>
+                    </Tooltip.Root>
+                  {/each}
+                </div>
+              </Card.Content>
+            </Card.Root>
+          </div>
+        </Tooltip.Provider>
       {/if}
     </div>
   </main>

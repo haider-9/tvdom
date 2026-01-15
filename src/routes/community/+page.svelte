@@ -557,7 +557,7 @@
 					</Card.Content>
 				</Card.Root>
 			{:else}
-				{#each filterPosts() as post (post._id)}
+				{#each filterPosts() as post, index (post._id)}
 					<Card.Root>
 						<Card.Content class="p-0">
 							<!-- Post Header -->
