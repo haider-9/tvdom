@@ -281,17 +281,42 @@
 				{/if}
 
 				{#if trailer}
-					<Button
-						class="gap-2 px-6 py-6 text-lg"
-						onclick={() =>
-							window.open(
-								`https://www.youtube.com/watch?v=${trailer.key}`,
-								"_blank",
-							)}
-					>
-						<Play class="w-5 h-5 fill-current" />
-						Watch Trailer
-					</Button>
+					<div class="flex flex-wrap gap-3">
+						<a href="/watch/{type}/{details.id}">
+							<Button
+								size="lg"
+								class="gap-2 px-8 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+							>
+								<Play class="w-6 h-6 fill-current" />
+								Watch Now
+							</Button>
+						</a>
+						<Button
+							variant="outline"
+							size="lg"
+							class="gap-2 px-6 py-6 text-base"
+							onclick={() =>
+								window.open(
+									`https://www.youtube.com/watch?v=${trailer.key}`,
+									"_blank",
+								)}
+						>
+							<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+								<path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+							</svg>
+							Trailer
+						</Button>
+					</div>
+				{:else}
+					<a href="/watch/{type}/{details.id}">
+						<Button
+							size="lg"
+							class="gap-2 px-8 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+						>
+							<Play class="w-6 h-6 fill-current" />
+							Watch Now
+						</Button>
+					</a>
 				{/if}
 
 				<!-- User Actions -->
@@ -416,13 +441,13 @@
 						Gallery
 					</h2>
 				</div>
-				<div class="overflow-x-auto scrollbar-hide -mx-4 md:mx-0">
-					<div class="flex gap-4 px-4 md:px-0 pb-4">
-						{#each allImages.slice(0, 20) as img, i}
+				<div class="overflow-x-auto border scrollbar-hide -mx-4 md:mx-0">
+					<div class="flex gap-4 px-4 md:px-0 mt-4">
+						{#each allImages as img, i}
 							<button
 								type="button"
 								onclick={() => openLightbox(i)}
-								class="flex-shrink-0 w-[280px] h-[180px] overflow-hidden rounded-lg bg-muted hover:shadow-xl transition-all duration-300 hover:-translate-y-2 cursor-pointer border-2 border-transparent hover:border-primary"
+								class="flex-shrink-0 w-[280px] h-[180px] overflow-hidden rounded-lg bg-muted hover:shadow-xl transition-all duration-300 hover:-translate-y-2 cursor-pointer border-2 border-transparent hover:border-primary "
 							>
 								<img
 									src={`https://image.tmdb.org/t/p/w500${img.file_path}`}
