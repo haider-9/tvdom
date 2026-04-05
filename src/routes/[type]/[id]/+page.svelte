@@ -10,7 +10,6 @@
 		Plus,
 		Heart,
 		Check,
-		Bookmark,
 	} from "lucide-svelte";
 	import * as Card from "$lib/components/ui/card";
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
@@ -181,10 +180,10 @@
 				class="w-full h-full object-cover"
 			/>
 			<div
-				class="absolute inset-0 bg-gradient-to-t from-background via-background/90 to-background/30"
+				class="absolute inset-0 bg-linear-to-t from-background via-background/90 to-background/30"
 			></div>
 			<div
-				class="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-transparent"
+				class="absolute inset-0 bg-linear-to-r from-background/80 via-transparent to-transparent"
 			></div>
 		{/if}
 	</div>
@@ -193,7 +192,7 @@
 	<div class="container mx-auto px-4 -mt-40 md:-mt-48 relative z-10 pb-12">
 		<div class="flex flex-col md:flex-row gap-8 mb-12">
 			<!-- Poster -->
-			<div class="flex-shrink-0">
+			<div class="shrink-0">
 				<img
 					src={posterUrl}
 					alt={title}
@@ -285,7 +284,7 @@
 						<a href="/watch/{type}/{details.id}">
 							<Button
 								size="lg"
-								class="gap-2 px-8 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+								class="gap-2 px-8 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
 							>
 								<Play class="w-6 h-6 fill-current" />
 								Watch Now
@@ -311,7 +310,7 @@
 					<a href="/watch/{type}/{details.id}">
 						<Button
 							size="lg"
-							class="gap-2 px-8 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+							class="gap-2 px-8 py-6 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
 						>
 							<Play class="w-6 h-6 fill-current" />
 							Watch Now
@@ -447,7 +446,7 @@
 							<button
 								type="button"
 								onclick={() => openLightbox(i)}
-								class="flex-shrink-0 w-[280px] h-[180px] overflow-hidden rounded-lg bg-muted hover:shadow-xl transition-all duration-300 hover:-translate-y-2 cursor-pointer border-2 border-transparent hover:border-primary "
+								class="shrink-0 w-[280px] h-[180px] overflow-hidden rounded-lg bg-muted hover:shadow-xl transition-all duration-300 hover:-translate-y-2 cursor-pointer border-2 border-transparent hover:border-primary "
 							>
 								<img
 									src={`https://image.tmdb.org/t/p/w500${img.file_path}`}
@@ -577,10 +576,7 @@
 				<div class="overflow-x-auto scrollbar-hide -mx-4 md:mx-0">
 					<div class="flex gap-6 px-4 md:px-0 pb-4">
 						{#each cast as actor}
-							<a
-								href="/person/{actor.id}"
-								class="flex-shrink-0 w-80 group block"
-							>
+							<div class="shrink-0 w-80 group">
 								<Card.Root
 									class="relative overflow-hidden rounded-3xl bg-card/40 border border-border/60 transition-colors duration-300"
 								>
@@ -604,7 +600,7 @@
 
 										<!-- Gradient overlay -->
 										<div
-											class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"
+											class="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent"
 										></div>
 
 										<!-- Content -->
@@ -625,24 +621,37 @@
 
 												<!-- Actor Name -->
 												<Card.Title
-													class="text-xl md:text-2xl font-bold text-white drop-shadow-sm line-clamp-2 group-hover:text-primary transition-colors"
+													class="text-xl md:text-2xl font-bold text-white drop-shadow-sm line-clamp-2"
 												>
-													{actor.name}
+													<a 
+														href="/person/{actor.id}"
+														class="hover:text-primary transition-colors"
+													>
+														{actor.name}
+													</a>
 												</Card.Title>
 
 												<!-- Character -->
 												{#if actor.character}
-													<p
-														class="text-xs md:text-sm text-gray-200/90 leading-relaxed line-clamp-2"
-													>
-														as {actor.character}
+													<p class="text-xs md:text-sm text-white/90 leading-relaxed line-clamp-2">
+														as 
+														{#if actor.credit_id}
+															<a 
+																href="/character/{actor.credit_id}"
+																class="text-primary hover:text-primary/80 transition-colors underline decoration-1 underline-offset-2"
+															>
+																{actor.character}
+															</a>
+														{:else}
+															<span class="text-primary">{actor.character}</span>
+														{/if}
 													</p>
 												{/if}
 											</div>
 										</div>
 									</div>
 								</Card.Root>
-							</a>
+							</div>
 						{/each}
 					</div>
 				</div>
@@ -767,7 +776,7 @@
 				<div class="overflow-x-auto scrollbar-hide -mx-4 md:mx-0">
 					<div class="flex gap-16 px-4 md:px-0 pb-4">
 						{#each similar.results.slice(0, 12) as item}
-							<div class="flex-shrink-0 w-[280px]">
+							<div class="shrink-0 w-[280px]">
 								<MediaCard media={item} type={mediaType} />
 							</div>
 						{/each}
@@ -792,7 +801,7 @@
 		scroll-snap-type: x proximity;
 	}
 
-	.flex-shrink-0 {
+	.shrink-0 {
 		scroll-snap-align: start;
 	}
 </style>

@@ -156,7 +156,7 @@
                         >
                             <!-- Profile picture -->
                             <div
-                                class="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-300 dark:border-gray-600"
+                                class="w-8 h-8 rounded-full overflow-hidden border-2 border-border"
                             >
                                 {#if userStore.user?.avatar}
                                     <img
@@ -256,7 +256,7 @@
 
                                     <button
                                         onclick={handleLogout}
-                                        class="flex items-center gap-3 w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                                        class="flex items-center gap-3 w-full px-3 py-2 text-left text-sm text-destructive hover:bg-destructive/10 rounded-md transition-colors"
                                     >
                                         <LogOut class="w-4 h-4" />
                                         <span>Sign Out</span>
@@ -388,7 +388,7 @@
                                             class="flex items-center gap-3 p-2 mb-2 rounded-md hover:bg-accent/5"
                                         >
                                             <div
-                                                class="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-300 dark:border-gray-600"
+                                                class="w-8 h-8 rounded-full overflow-hidden border-2 border-border"
                                             >
                                                 {#if userStore.user?.avatar}
                                                     <img
@@ -427,7 +427,7 @@
 
                                         <button
                                             onclick={handleLogout}
-                                            class="flex items-center gap-3 p-2 rounded-md hover:bg-accent/5 text-red-600 w-full text-left"
+                                            class="flex items-center gap-3 p-2 rounded-md hover:bg-destructive/10 text-destructive w-full text-left"
                                         >
                                             <LogOut class="w-5 h-5" />
                                             <span>Sign Out</span>

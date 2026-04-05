@@ -14,12 +14,15 @@
         <script>
             (function () {
                 try {
+                    // Add preload class to prevent transitions during load
+                    document.documentElement.classList.add('preload');
+                    
                     var theme =
                         localStorage.getItem("tvdom-theme") || "bubblegum";
                     var html = document.documentElement;
 
                     // Remove existing classes
-                    html.classList.remove("dark", "theme-bubblegum");
+                    html.classList.remove("dark", "theme-bubblegum", "theme-cyberpunk", "theme-doom65", "theme-claymorphism");
 
                     // Apply theme
                     if (theme === "dark") {
@@ -28,11 +31,33 @@
                     } else if (theme === "bubblegum") {
                         html.classList.add("theme-bubblegum");
                         html.setAttribute("data-theme", "bubblegum");
+                    } else if (theme === "cyberpunk") {
+                        html.classList.add("theme-cyberpunk");
+                        html.setAttribute("data-theme", "cyberpunk");
+                    } else if (theme === "doom65") {
+                        html.classList.add("theme-doom65");
+                        html.setAttribute("data-theme", "doom65");
+                    } else if (theme === "claymorphism") {
+                        html.classList.add("theme-claymorphism");
+                        html.setAttribute("data-theme", "claymorphism");
                     } else {
                         html.setAttribute("data-theme", "light");
                     }
 
                     console.log("Theme loaded:", theme);
+                    
+                    // Remove preload class after a short delay to enable transitions
+                    setTimeout(function() {
+                        html.classList.remove('preload');
+                    }, 100);
+                } catch (error) {
+                    console.warn("Theme initialization failed:", error);
+                    // Still remove preload class even if theme loading fails
+                    setTimeout(function() {
+                        document.documentElement.classList.remove('preload');
+                    }, 100);
+                }
+            })();
                 } catch (e) {
                     // Fallback to bubblegum
                     document.documentElement.classList.add("theme-bubblegum");

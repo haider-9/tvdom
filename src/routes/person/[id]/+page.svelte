@@ -3,25 +3,24 @@
   import { Badge } from "$lib/components/ui/badge";
   import { Button } from "$lib/components/ui/button";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
-  // dialog UI is not used for the gallery lightbox; use a simple custom modal
-  import MediaCard from "$lib/components/MediaCard.svelte";
+  import PersonMediaCard from "$lib/components/PersonMediaCard.svelte";
   import { userStore } from "$lib/stores/user.svelte";
   import { toast } from "svelte-sonner";
   import type { PageData } from "./$types";
 
   let { data }: { data: PageData } = $props();
 
-  const { person, knownFor } = data;
+  const { person, knownFor, movieCredits, tvCredits } = data;
 
   const profileUrl = person.profile_path
     ? `https://image.tmdb.org/t/p/w500${person.profile_path}`
     : "";
 
-  const movieCredits = (knownFor || []).filter(
-    (c: any) => c.media_type === "movie"
-  );
-  const tvCredits = (knownFor || []).filter((c: any) => c.media_type === "tv");
   const images: any[] = [];
+
+  // Use the new detailed credits data
+  const displayMovieCredits = movieCredits || [];
+  const displayTvCredits = tvCredits || [];
 
   // Check if person is in user's favorites
   let isFavorite = $derived(
@@ -133,16 +132,16 @@
     class="relative min-h-[60vh] md:min-h-[70vh] w-full overflow-hidden bg-muted"
   >
     <div
-      class="absolute inset-0 bg-gradient-to-t from-background via-background/90 to-background/30"
+      class="absolute inset-0 bg-linear-to-t from-background via-background/90 to-background/30"
     ></div>
     <div
-      class="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-transparent"
+      class="absolute inset-0 bg-linear-to-r from-background/80 via-transparent to-transparent"
     ></div>
 
     <div class="relative container mx-auto px-4 md:px-8 py-12 md:py-16">
       <div class="flex flex-col md:flex-row gap-8 items-start">
         <!-- Profile Picture -->
-        <div class="flex-shrink-0">
+        <div class="shrink-0">
           <div
             class="w-48 h-72 md:w-64 md:h-96 rounded-lg overflow-hidden bg-muted shadow-2xl"
           >
@@ -269,6 +268,26 @@
   </section>
 
   <main class="container mx-auto px-4 md:px-8 py-12">
+    {#if knownFor && knownFor.length > 0}
+      <section class="mb-16">
+        <div class="mb-8">
+          <h2 class="text-3xl md:text-4xl font-bold flex items-center gap-3">
+            <Star class="w-8 h-8" />
+            Known For
+          </h2>
+        </div>
+
+        <div class="overflow-x-auto scrollbar-hide -mx-4 md:mx-0">
+          <div class="flex gap-16 px-4 md:px-0 pb-4">
+            {#each knownFor.slice(0, 10) as credit}
+              <div class="shrink-0 w-[280px]">
+                <PersonMediaCard media={credit} type={credit.media_type} showCharacter={true} />
+              </div>
+            {/each}
+          </div>
+        </div>
+      </section>
+    {/if}
     {#if images.length > 0}
       <section class="mb-16">
         <div class="mb-8">
@@ -397,20 +416,21 @@
         </div>
       </div>
     {/if}
-    {#if movieCredits.length > 0}
+    {#if displayMovieCredits.length > 0}
       <section class="mb-16">
         <div class="mb-8">
           <h2 class="text-3xl md:text-4xl font-bold flex items-center gap-3">
             <Film class="w-8 h-8" />
             Movie Credits
+            <span class="text-lg font-normal text-muted-foreground">({displayMovieCredits.length})</span>
           </h2>
         </div>
 
         <div class="overflow-x-auto scrollbar-hide -mx-4 md:mx-0">
           <div class="flex gap-16 px-4 md:px-0 pb-4">
-            {#each movieCredits.slice(0, 20) as credit}
-              <div class="flex-shrink-0 w-[280px]">
-                <MediaCard media={credit} type="movie" />
+            {#each displayMovieCredits.slice(0, 20) as credit}
+              <div class="shrink-0 w-[280px]">
+                <PersonMediaCard media={credit} type="movie" showCharacter={true} />
               </div>
             {/each}
           </div>
@@ -418,20 +438,21 @@
       </section>
     {/if}
 
-    {#if tvCredits.length > 0}
+    {#if displayTvCredits.length > 0}
       <section class="mb-16">
         <div class="mb-8">
           <h2 class="text-3xl md:text-4xl font-bold flex items-center gap-3">
             <Tv class="w-8 h-8" />
             TV Credits
+            <span class="text-lg font-normal text-muted-foreground">({displayTvCredits.length})</span>
           </h2>
         </div>
 
         <div class="overflow-x-auto scrollbar-hide -mx-4 md:mx-0">
           <div class="flex gap-16 px-4 md:px-0 pb-4">
-            {#each tvCredits.slice(0, 20) as credit}
-              <div class="flex-shrink-0 w-[280px]">
-                <MediaCard media={credit} type="tv" />
+            {#each displayTvCredits.slice(0, 20) as credit}
+              <div class="shrink-0 w-[280px]">
+                <PersonMediaCard media={credit} type="tv" showCharacter={true} />
               </div>
             {/each}
           </div>
@@ -455,7 +476,7 @@
     scroll-snap-type: x proximity;
   }
 
-  .flex-shrink-0 {
+  .shrink-0 {
     scroll-snap-align: start;
   }
 </style>

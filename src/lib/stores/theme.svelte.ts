@@ -50,6 +50,9 @@ class ThemeStore {
   #applyTheme(theme: Theme) {
     if (!browser || !document.documentElement) return;
 
+    // Create wave effect
+    this.#createWaveEffect();
+
     const html = document.documentElement;
 
     // Remove existing theme classes
@@ -84,6 +87,28 @@ class ThemeStore {
     }
 
     console.log("Theme applied:", theme);
+  }
+
+  #createWaveEffect() {
+    if (!browser) return;
+    
+    // Remove any existing wave
+    const existingWave = document.querySelector('.theme-wave');
+    if (existingWave) {
+      existingWave.remove();
+    }
+
+    // Create new wave element
+    const wave = document.createElement('div');
+    wave.className = 'theme-wave';
+    document.body.appendChild(wave);
+
+    // Remove wave after animation
+    setTimeout(() => {
+      if (wave.parentNode) {
+        wave.parentNode.removeChild(wave);
+      }
+    }, 800);
   }
 
   setTheme(theme: Theme) {

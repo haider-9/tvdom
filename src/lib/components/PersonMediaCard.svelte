@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Star, Calendar } from 'lucide-svelte';
+	import { Star, Calendar, User } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import * as Card from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
@@ -7,12 +7,14 @@
 	interface Props {
 		media: any;
 		type: 'movie' | 'tv';
+		showCharacter?: boolean;
 	}
 
-	let { media, type }: Props = $props();
+	let { media, type, showCharacter = true }: Props = $props();
 
 	const title = type === 'movie' ? media.title : media.name;
 	const releaseDate = type === 'movie' ? media.release_date : media.first_air_date;
+	const character = media.character;
 	const imageUrl = media.poster_path
 		? `https://image.tmdb.org/t/p/w500${media.poster_path}`
 		: '/placeholder.svg';
@@ -26,7 +28,7 @@
 </script>
 
 <button class="group block cursor-pointer w-full text-left" onclick={handleCardClick}>
-	<Card.Root class="relative overflow-hidden rounded-2xl md:rounded-3xl w-full bg-card/40 border border-border/60 transition-colors duration-300">
+	<Card.Root class="relative overflow-hidden rounded-2xl md:rounded-3xl w-full bg-card/40 border border-border/60 transition-all duration-300 hover:shadow-lg hover:border-primary/20">
 		<!-- Full-card image -->
 		<div class="relative h-64 sm:h-72 md:h-80 lg:h-96 w-full">
 			<img
@@ -64,9 +66,17 @@
 					</div>
 
 					<!-- Title -->
-					<Card.Title class="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white drop-shadow-sm line-clamp-2 group-hover:text-primary transition-colors">
+					<Card.Title class="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white drop-shadow-sm line-clamp-2 group-hover:text-primary transition-colors duration-300">
 						{title}
 					</Card.Title>
+
+					<!-- Character name (if available and showCharacter is true) -->
+					{#if showCharacter && character}
+						<div class="flex items-center gap-2 text-sm text-white/90">
+							<User class="w-4 h-4" />
+							<span class="font-medium">as {character}</span>
+						</div>
+					{/if}
 
 					<!-- Description -->
 					{#if media.overview}
