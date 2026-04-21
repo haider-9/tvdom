@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { MessageSquare, Heart, Send, Trash2, Users2, Image as ImageIcon, X, AlertTriangle, TrendingUp, Clock, Flame, Bookmark, Share2, MoreHorizontal } from 'lucide-svelte';
+	import { MessageSquare, Heart, Send, Trash2, Users2, Image as ImageIcon, X, AlertTriangle, TrendingUp, Clock, Flame, Bookmark, Share2, MoreHorizontal, Users } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import * as Card from '$lib/components/ui/card';
@@ -403,7 +403,7 @@
 					</div>
 				</div>
 				<div class="stat-card">
-					<Flame class="stat-icon" />
+					<Flame class="stat-icon text-orange-500" />
 					<div class="stat-content">
 						<div class="stat-value">{communityStats.activeToday}</div>
 						<div class="stat-label">Today</div>
@@ -519,13 +519,13 @@
 			</Card.Root>
 		{:else}
 			<Card.Root>
-				<Card.Content class="signin-prompt">
-					<Users2 class="w-16 h-16 opacity-20" />
+				<Card.Content class="signin-prompt py-6">
+					<Users class="w-16 h-16 opacity-20" />
 					<div class="signin-text-content">
 						<h3>Join the Conversation</h3>
 						<p>Sign in to share your thoughts and connect with the community</p>
 					</div>
-					<Button onclick={() => goto('/login')} size="lg">Sign In</Button>
+					<Button onclick={() => goto('/login')} size="lg" class="mx-auto">Sign In</Button>
 				</Card.Content>
 			</Card.Root>
 		{/if}
@@ -539,7 +539,7 @@
 				</div>
 			{:else if filterPosts().length === 0}
 				<Card.Root>
-					<Card.Content class="empty-state">
+					<Card.Content class="empty-state py-8">
 						{#if activeFilter === 'following'}
 							<Users2 class="w-20 h-20 opacity-20" />
 							<div class="empty-text-content">
@@ -1087,7 +1087,9 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
-		margin-top: 1.5rem;
+		margin: auto;
+		margin-top: 1.5rem !important;
+		max-width: 40rem;
 	}
 
 	.posts-feed > :global(*) {
