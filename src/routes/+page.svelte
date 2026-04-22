@@ -4,7 +4,7 @@
     import Hero from "$lib/components/Hero.svelte";
     import { Button } from "$lib/components/ui/button";
     import { userStore } from "$lib/stores/user.svelte.js";
-    import { Star, Users, Eye, Film } from "lucide-svelte";
+    import { Star, Users, Eye, Film, ArrowRight } from "lucide-svelte";
 
     let { data }: { data: PageData } = $props();
 </script>
@@ -25,9 +25,9 @@
                 <Button
                     href="/movies?section=trending"
                     variant="outline"
-                    class="hidden md:inline-flex"
+                    class="hidden md:inline-flex group"
                 >
-                    See more
+                    See more <ArrowRight class="group-hover:translate-x-1 transition-transform" />
                 </Button>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -39,9 +39,9 @@
                 <Button
                     href="/movies?section=trending"
                     variant="outline"
-                    class="w-full"
+                    class="w-full group"
                 >
-                    See more
+                    See more <ArrowRight class="group-hover:translate-x-1 transition-transform" />
                 </Button>
             </div>
         </section>
@@ -55,9 +55,9 @@
                 <Button
                     href="/tv?section=trending"
                     variant="outline"
-                    class="hidden md:inline-flex"
+                    class="hidden md:inline-flex group"
                 >
-                    See more
+                    See more <ArrowRight class="group-hover:translate-x-1 transition-transform" />
                 </Button>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -69,9 +69,9 @@
                 <Button
                     href="/tv?section=trending"
                     variant="outline"
-                    class="w-full"
+                    class="w-full group"
                 >
-                    See more
+                    See more <ArrowRight class="group-hover:translate-x-1 transition-transform" />
                 </Button>
             </div>
         </section>
@@ -85,9 +85,9 @@
                 <Button
                     href="/movies"
                     variant="outline"
-                    class="hidden md:inline-flex"
+                    class="hidden md:inline-flex group"
                 >
-                    See more
+                    See more <ArrowRight class="group-hover:translate-x-1 transition-transform" />
                 </Button>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -96,8 +96,8 @@
                 {/each}
             </div>
             <div class="mt-6 md:hidden flex justify-center">
-                <Button href="/movies" variant="outline" class="w-full">
-                    See more
+                <Button href="/movies" variant="outline" class="w-full group">
+                    See more <ArrowRight class="group-hover:translate-x-1 transition-transform" />
                 </Button>
             </div>
         </section>
@@ -111,9 +111,9 @@
                 <Button
                     href="/tv"
                     variant="outline"
-                    class="hidden md:inline-flex"
+                    class="hidden md:inline-flex group"
                 >
-                    See more
+                    See more <ArrowRight class="group-hover:translate-x-1 transition-transform" />
                 </Button>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -122,8 +122,8 @@
                 {/each}
             </div>
             <div class="mt-6 md:hidden flex justify-center">
-                <Button href="/tv" variant="outline" class="w-full">
-                    See more
+                <Button href="/tv" variant="outline" class="w-full group">
+                    See more <ArrowRight class="group-hover:translate-x-1 transition-transform" />
                 </Button>
             </div>
         </section>

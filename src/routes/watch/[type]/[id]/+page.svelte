@@ -3,11 +3,12 @@
   import { browser } from "$app/environment";
   import { page } from "$app/stores";
   import { onMount } from "svelte";
-  import { Monitor } from "lucide-svelte";
+  import { Monitor, Grid3X3, List, Maximize, Minimize } from "lucide-svelte";
   import { Button } from "$lib/components/ui/button";
   import * as Card from "$lib/components/ui/card";
   import * as Tooltip from "$lib/components/ui/tooltip";
   import { userStore } from "$lib/stores/user.svelte";
+  import { cn } from "$lib/utils";
   import type { PageData } from "./$types";
 
   let { data }: { data: PageData } = $props();
@@ -26,19 +27,25 @@
   let videoEnded = $state(false);
   let watchingTracked = $state(false);
   let hasLoadedProgress = $state(false);
+  let seasonViewMode = $state<"grid" | "list">("list");
+  let episodeViewMode = $state<"grid" | "list">("list");
+  let isTheaterMode = $state(false);
 
   // Load saved progress on mount
   onMount(() => {
-    if (browser && mediaType === 'tv') {
+    if (browser && mediaType === "tv") {
       // First check URL params
       const urlParams = new URLSearchParams(window.location.search);
-      const urlSeason = urlParams.get('s');
-      const urlEpisode = urlParams.get('e');
-      
+      const urlSeason = urlParams.get("s");
+      const urlEpisode = urlParams.get("e");
+
       if (urlSeason && urlEpisode) {
         selectedSeason = parseInt(urlSeason);
         selectedEpisode = parseInt(urlEpisode);
-        console.log('Loaded from URL:', { season: selectedSeason, episode: selectedEpisode });
+        console.log("Loaded from URL:", {
+          season: selectedSeason,
+          episode: selectedEpisode,
+        });
       } else {
         // Fall back to localStorage
         const savedProgress = localStorage.getItem(`watch-${details.id}`);
@@ -48,10 +55,10 @@
             if (season && episode) {
               selectedSeason = season;
               selectedEpisode = episode;
-              console.log('Loaded from localStorage:', { season, episode });
+              console.log("Loaded from localStorage:", { season, episode });
             }
           } catch (e) {
-            console.error('Error loading saved progress:', e);
+            console.error("Error loading saved progress:", e);
           }
         }
       }
@@ -61,19 +68,25 @@
 
   // Save progress when episode changes (only after initial load)
   $effect(() => {
-    if (browser && mediaType === 'tv' && hasLoadedProgress) {
-      localStorage.setItem(`watch-${details.id}`, JSON.stringify({
-        season: selectedSeason,
-        episode: selectedEpisode
-      }));
-      
+    if (browser && mediaType === "tv" && hasLoadedProgress) {
+      localStorage.setItem(
+        `watch-${details.id}`,
+        JSON.stringify({
+          season: selectedSeason,
+          episode: selectedEpisode,
+        }),
+      );
+
       // Update URL without reloading
       const url = new URL(window.location.href);
-      url.searchParams.set('s', selectedSeason.toString());
-      url.searchParams.set('e', selectedEpisode.toString());
-      window.history.replaceState({}, '', url);
-      
-      console.log('Saved progress:', { season: selectedSeason, episode: selectedEpisode });
+      url.searchParams.set("s", selectedSeason.toString());
+      url.searchParams.set("e", selectedEpisode.toString());
+      window.history.replaceState({}, "", url);
+
+      console.log("Saved progress:", {
+        season: selectedSeason,
+        episode: selectedEpisode,
+      });
     }
   });
 
@@ -84,38 +97,38 @@
     try {
       const userId = userStore.user?._id || userStore.user?.id;
       if (!userId) {
-        console.log('No userId found, cannot track watching');
+        console.log("No userId found, cannot track watching");
         return;
       }
 
-      console.log('Tracking watching:', {
+      console.log("Tracking watching:", {
         userId,
         mediaId: details.id,
         mediaType,
         season: selectedSeason,
-        episode: selectedEpisode
+        episode: selectedEpisode,
       });
 
-      const response = await fetch('/api/currently-watching', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/currently-watching", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId,
           mediaId: details.id,
           mediaType,
           mediaTitle: title,
           mediaPoster: details.poster_path,
-          season: mediaType === 'tv' ? selectedSeason : undefined,
-          episode: mediaType === 'tv' ? selectedEpisode : undefined
-        })
+          season: mediaType === "tv" ? selectedSeason : undefined,
+          episode: mediaType === "tv" ? selectedEpisode : undefined,
+        }),
       });
 
       const result = await response.json();
-      console.log('Track watching response:', result);
+      console.log("Track watching response:", result);
 
       watchingTracked = true;
     } catch (error) {
-      console.error('Error tracking watching:', error);
+      console.error("Error tracking watching:", error);
     }
   }
 
@@ -127,26 +140,31 @@
       const userId = userStore.user?._id || userStore.user?.id;
       if (!userId) return;
 
-      await fetch(`/api/currently-watching?userId=${userId}&mediaId=${details.id}`, {
-        method: 'DELETE'
-      });
+      await fetch(
+        `/api/currently-watching?userId=${userId}&mediaId=${details.id}`,
+        {
+          method: "DELETE",
+        },
+      );
     } catch (error) {
-      console.error('Error stopping tracking:', error);
+      console.error("Error stopping tracking:", error);
     }
   }
 
   // Track when player loads
   $effect(() => {
     if (!isPlayerLoading && userStore.isAuthenticated) {
-      console.log('Player loaded, tracking watching');
+      console.log("Player loaded, tracking watching");
       trackWatching();
     }
   });
 
   // Update tracking when episode changes (reset watchingTracked flag)
   $effect(() => {
-    if (mediaType === 'tv') {
-      console.log('Episode changed to S' + selectedSeason + 'E' + selectedEpisode);
+    if (mediaType === "tv") {
+      console.log(
+        "Episode changed to S" + selectedSeason + "E" + selectedEpisode,
+      );
       watchingTracked = false; // Reset flag so tracking updates
       if (!isPlayerLoading && userStore.isAuthenticated) {
         trackWatching();
@@ -158,7 +176,7 @@
   const currentSeasonEpisodes = $derived(() => {
     if (mediaType === "tv" && seasons) {
       const season = seasons.find(
-        (s: any) => s.season_number === selectedSeason
+        (s: any) => s.season_number === selectedSeason,
       );
       return season?.episode_count || 0;
     }
@@ -178,7 +196,7 @@
     const seasonData = currentSeasonData();
     if (seasonData && seasonData.episodes) {
       const episode = seasonData.episodes.find(
-        (ep: any) => ep.episode_number === episodeNumber
+        (ep: any) => ep.episode_number === episodeNumber,
       );
       return episode?.name || `Episode ${episodeNumber}`;
     }
@@ -193,7 +211,7 @@
     // Check if there's a next season
     if (seasons) {
       const currentSeasonIndex = seasons.findIndex(
-        (s: any) => s.season_number === selectedSeason
+        (s: any) => s.season_number === selectedSeason,
       );
       return currentSeasonIndex < seasons.length - 1;
     }
@@ -263,7 +281,7 @@
             mediaType,
             details.id.toString(),
             selectedSeason,
-            selectedEpisode
+            selectedEpisode,
           )
         : "";
     }
@@ -299,7 +317,7 @@
     } else if (seasons) {
       // Move to next season
       const currentSeasonIndex = seasons.findIndex(
-        (s: any) => s.season_number === selectedSeason
+        (s: any) => s.season_number === selectedSeason,
       );
       if (currentSeasonIndex < seasons.length - 1) {
         const nextSeason = seasons[currentSeasonIndex + 1];
@@ -327,7 +345,7 @@
 
   // Cleanup on unmount
   if (browser) {
-    window.addEventListener('beforeunload', stopTracking);
+    window.addEventListener("beforeunload", stopTracking);
   }
 
   // Listen for video end events from iframe (if supported by the player)
@@ -341,27 +359,71 @@
       }
     });
   }
+
+  // Theater mode toggle
+  function toggleTheaterMode() {
+    isTheaterMode = !isTheaterMode;
+    if (browser) {
+      if (isTheaterMode) {
+        document.body.style.overflow = "hidden";
+      } else {
+        document.body.style.overflow = "";
+      }
+    }
+  }
+
+  // Keyboard shortcuts for theater mode
+  if (browser) {
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "t" || e.key === "T") {
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+          return;
+        }
+        toggleTheaterMode();
+      }
+      if (e.key === "Escape" && isTheaterMode) {
+        isTheaterMode = false;
+        document.body.style.overflow = "";
+      }
+    });
+  }
 </script>
 
 <svelte:head>
   <title>Watch {title} - TVDom</title>
 </svelte:head>
 
-<div class="watch-page">
-  <!-- Top Bar -->
+<div class={cn(
+  "min-h-screen bg-background transition-colors duration-300",
+  isTheaterMode && "overflow-hidden bg-black"
+)}>
+  <!-- Top Bar (hidden in theater mode) -->
 
   <!-- Main Content -->
-  <main class="watch-main">
-    <div class="container">
+  <main class={cn(
+    "transition-all duration-300",
+    isTheaterMode
+      ? "fixed inset-0 z-9999 flex flex-col items-center justify-center bg-black p-4"
+      : "pt-32 pb-6 sm:pt-36 sm:pb-8"
+  )}>
+    <div class={cn(
+      "transition-all duration-300 flex flex-col",
+      isTheaterMode ? "w-full h-full max-w-[95vw] max-h-[95vh]" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+    )}>
       <!-- Video Player -->
-      <div class="player-wrapper">
-        <Card.Root class="player-card overflow-hidden">
-          <Card.Content class="player-content  p-0">
-         
-            <div class="player-container ">
+      <div class={cn("relative", isTheaterMode ? "flex-1 w-full" : "mb-4 sm:mb-6")}>
+        <Card.Root class={cn(
+          "overflow-hidden transition-all duration-300",
+          isTheaterMode && "h-full w-full shadow-2xl"
+        )}>
+          <Card.Content class={cn("p-0", isTheaterMode && "h-full w-full")}>
+            <div class={cn(
+              "relative w-full",
+              isTheaterMode ? "h-full" : "aspect-video"
+            )}>
               <iframe
                 src={getStreamUrl()}
-                class="player-iframe "
+                class="absolute inset-0 w-full h-full"
                 frameborder="0"
                 allowfullscreen
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -374,23 +436,86 @@
         </Card.Root>
       </div>
 
+      <!-- Theater Mode Button (Default View - Below Player) -->
+      {#if !isTheaterMode}
+        <div class="flex justify-end py-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onclick={toggleTheaterMode}
+            class="gap-2"
+          >
+            <Maximize class="w-4 h-4" />
+            Theater Mode
+          </Button>
+        </div>
+      {/if}
+
+      <!-- Theater Mode Controls (Below Player) -->
+      {#if isTheaterMode}
+        <div class="flex items-center justify-center flex-wrap gap-4 py-4 bg-black">
+          {#if mediaType === 'tv'}
+            <Button
+              variant="outline"
+              size="sm"
+              onclick={playPreviousEpisode}
+              disabled={selectedSeason === 1 && selectedEpisode === 1}
+              class="bg-zinc-900 border-zinc-700 text-white hover:bg-zinc-800 hover:text-white"
+            >
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+              </svg>
+              Previous
+            </Button>
+            <span class="text-white text-sm font-medium px-3">
+              S{selectedSeason} E{selectedEpisode}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onclick={playNextEpisode}
+              disabled={!hasNextEpisode()}
+              class="bg-zinc-900 border-zinc-700 text-white hover:bg-zinc-800 hover:text-white"
+            >
+              Next
+              <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </Button>
+          {/if}
+          <Button
+            variant="outline"
+            size="sm"
+            onclick={() => { isTheaterMode = false; document.body.style.overflow = ""; }}
+            class="bg-zinc-900 border-zinc-700 text-white hover:bg-zinc-800 hover:text-white gap-2"
+          >
+            <Minimize class="w-4 h-4" />
+            Exit Theater
+          </Button>
+        </div>
+      {/if}
+
       <!-- Controls -->
-      <div class="controls-grid *:p-4">
+      <div
+        class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 sm:gap-6 mb-4 sm:mb-6 *:p-4"
+      >
         <!-- Server Selection -->
-        <Card.Root class="server-card ">
+        <Card.Root class={cn("lg:col-span-2", isTheaterMode && "hidden")}>
           <Card.Header>
-            <Card.Title class="card-title">
+            <Card.Title class="flex items-center gap-2">
               <Monitor class="w-5 h-5" />
               Server
             </Card.Title>
           </Card.Header>
           <Card.Content>
-            <div class="server-buttons">
+            <div
+              class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2"
+            >
               {#each streamingServers as server}
                 <Button
                   variant={selectedServer === server.id ? "default" : "outline"}
                   onclick={() => handleServerChange(server.id)}
-                  class="server-btn"
+                  class="w-full"
                 >
                   {server.name}
                 </Button>
@@ -401,13 +526,14 @@
       </div>
 
       <!-- Episode Navigation (TV Shows Only) -->
-      {#if mediaType === "tv"}
-        <div class="episode-nav">
+      {#if mediaType === "tv" && !isTheaterMode}
+        <div
+          class="flex items-center justify-between gap-4 mb-4 sm:mb-6 p-4 bg-card border border-border rounded-lg"
+        >
           <Button
             variant="outline"
             onclick={playPreviousEpisode}
             disabled={selectedSeason === 1 && selectedEpisode === 1}
-            class="nav-btn"
           >
             <svg
               class="w-4 h-4"
@@ -424,9 +550,11 @@
             </svg>
             <span>Previous</span>
           </Button>
-          <div class="episode-display">
-            <span class="episode-label">Now Playing</span>
-            <span class="episode-current"
+          <div class="flex flex-col items-center gap-1">
+            <span class="text-xs text-muted-foreground uppercase tracking-wider"
+              >Now Playing</span
+            >
+            <span class="text-lg sm:text-xl font-semibold text-foreground"
               >S{selectedSeason} E{selectedEpisode}</span
             >
           </div>
@@ -434,7 +562,6 @@
             variant="outline"
             onclick={playNextEpisode}
             disabled={!hasNextEpisode()}
-            class="nav-btn"
           >
             <span>Next</span>
             <svg
@@ -455,33 +582,86 @@
       {/if}
 
       <!-- Season & Episode Selection (TV Shows Only) -->
-      {#if mediaType === "tv" && seasons && seasons.length > 0}
+      {#if mediaType === "tv" && seasons && seasons.length > 0 && !isTheaterMode}
         <Tooltip.Provider>
-          <div class="episode-grid *:p-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 *:p-4">
             <!-- Season Selection -->
             <Card.Root>
-              <Card.Header>
+              <Card.Header class="flex flex-row items-center justify-between">
                 <Card.Title>Season</Card.Title>
+                <div class="flex gap-1">
+                  <Button
+                    variant={seasonViewMode === "grid" ? "default" : "outline"}
+                    size="icon"
+                    class="h-8 w-8"
+                    onclick={() => (seasonViewMode = "grid")}
+                  >
+                    <Grid3X3 class="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={seasonViewMode === "list" ? "default" : "outline"}
+                    size="icon"
+                    class="h-8 w-8"
+                    onclick={() => (seasonViewMode = "list")}
+                  >
+                    <List class="h-4 w-4" />
+                  </Button>
+                </div>
               </Card.Header>
               <Card.Content>
-                <div class="season-buttons">
+                <div
+                  class={cn(
+                    seasonViewMode === "grid"
+                      ? "grid grid-cols-4 xs:grid-cols-5 sm:grid-cols-6 gap-2"
+                      : "flex flex-col gap-1 max-h-56 sm:max-h-64 overflow-y-auto pr-1",
+                  )}
+                >
                   {#each seasons as season}
-                    <Tooltip.Root>
-                      <Tooltip.Trigger>
-                        <Button
-                          variant={selectedSeason === season.season_number
-                            ? "default"
-                            : "outline"}
-                          onclick={() => handleSeasonChange(season.season_number)}
-                          class="episode-btn"
+                    {#if seasonViewMode === "grid"}
+                      <Tooltip.Root>
+                        <Tooltip.Trigger>
+                          <Button
+                            variant={selectedSeason === season.season_number
+                              ? "default"
+                              : "outline"}
+                            onclick={() =>
+                              handleSeasonChange(season.season_number)}
+                            class="w-full min-h-10 border border-border rounded-lg transition-all duration-200 hover:border-primary hover:-translate-y-0.5 hover:shadow-[0_2px_4px_hsl(var(--primary)/0.15)]"
+                          >
+                            S{season.season_number}
+                          </Button>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>
+                          <p class="font-medium text-sm">
+                            {season.name || `Season ${season.season_number}`}
+                          </p>
+                        </Tooltip.Content>
+                      </Tooltip.Root>
+                    {:else}
+                      <button
+                        class={cn(
+                          "flex items-center gap-3 py-2 px-3 rounded-md bg-transparent cursor-pointer border border-border transition-all duration-200 text-sm text-left hover:bg-accent",
+                          {
+                            "bg-primary hover:bg-primary/90 text-primary-foreground": selectedSeason === season.season_number,
+                            "season-list-item": true,
+                          },
+                        )}
+                        onclick={() => handleSeasonChange(season.season_number)}
+                      >
+                        <span
+                          class="season-number font-semibold text-xs min-w-8"
+                          >S{season.season_number}</span
                         >
-                          {season.season_number}
-                        </Button>
-                      </Tooltip.Trigger>
-                      <Tooltip.Content>
-                        <p class="font-medium text-sm">{season.name || `Season ${season.season_number}`}</p>
-                      </Tooltip.Content>
-                    </Tooltip.Root>
+                        <span class="season-name flex-1 truncate"
+                          >{season.name ||
+                            `Season ${season.season_number}`}</span
+                        >
+                        <span
+                          class="season-episodes text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded"
+                          >{season.episode_count} eps</span
+                        >
+                      </button>
+                    {/if}
                   {/each}
                 </div>
               </Card.Content>
@@ -489,26 +669,75 @@
 
             <!-- Episode Selection -->
             <Card.Root>
-              <Card.Header>
+              <Card.Header class="flex flex-row items-center justify-between">
                 <Card.Title>Episode</Card.Title>
+                <div class="flex gap-1">
+                  <Button
+                    variant={episodeViewMode === "grid" ? "default" : "outline"}
+                    size="icon"
+                    class="h-8 w-8"
+                    onclick={() => (episodeViewMode = "grid")}
+                  >
+                    <Grid3X3 class="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={episodeViewMode === "list" ? "default" : "outline"}
+                    size="icon"
+                    class="h-8 w-8"
+                    onclick={() => (episodeViewMode = "list")}
+                  >
+                    <List class="h-4 w-4" />
+                  </Button>
+                </div>
               </Card.Header>
               <Card.Content>
-                <div class="episode-buttons">
+                <div
+                  class={cn(
+                    episodeViewMode === "grid"
+                      ? "grid grid-cols-4 xs:grid-cols-5 sm:grid-cols-6 gap-2"
+                      : "flex flex-col gap-1 max-h-56 sm:max-h-64 overflow-y-auto pr-1",
+                  )}
+                >
                   {#each Array(currentSeasonEpisodes()) as _, i}
-                    <Tooltip.Root>
-                      <Tooltip.Trigger>
-                        <Button
-                          variant={selectedEpisode === i + 1 ? "default" : "outline"}
-                          onclick={() => handleEpisodeChange(i + 1)}
-                          class="episode-btn"
+                    {#if episodeViewMode === "grid"}
+                      <Tooltip.Root>
+                        <Tooltip.Trigger>
+                          <Button
+                            variant={selectedEpisode === i + 1
+                              ? "default"
+                              : "outline"}
+                            onclick={() => handleEpisodeChange(i + 1)}
+                            class="w-full min-h-10 border border-border rounded-lg transition-all duration-200 hover:border-primary hover:-translate-y-0.5 hover:shadow-[0_2px_4px_hsl(var(--primary)/0.15)]"
+                          >
+                            Ep {i + 1}
+                          </Button>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>
+                          <p class="font-medium text-sm">
+                            {getEpisodeTitle(i + 1)}
+                          </p>
+                        </Tooltip.Content>
+                      </Tooltip.Root>
+                    {:else}
+                      <button
+                        class={cn(
+                          "flex items-center gap-3 py-2 px-3 rounded-md border bg-transparent cursor-pointer transition-all duration-200 text-sm text-left hover:bg-accent",
+                          {
+                            "bg-primary hover:bg-primary/90 text-primary-foreground": selectedEpisode === i + 1,
+                            "episode-list-item": true,
+                          },
+                        )}
+                        onclick={() => handleEpisodeChange(i + 1)}
+                      >
+                        <span
+                          class="episode-number font-semibold text-xs min-w-8 leading-none"
+                          >E{i + 1}</span
                         >
-                          {i + 1}
-                        </Button>
-                      </Tooltip.Trigger>
-                      <Tooltip.Content>
-                        <p class="font-medium text-sm">{getEpisodeTitle(i + 1)}</p>
-                      </Tooltip.Content>
-                    </Tooltip.Root>
+                        <span class="episode-name flex-1 truncate"
+                          >{getEpisodeTitle(i + 1)}</span
+                        >
+                      </button>
+                    {/if}
                   {/each}
                 </div>
               </Card.Content>
@@ -519,238 +748,3 @@
     </div>
   </main>
 </div>
-
-<style>
-  .watch-page {
-    min-height: 100vh;
-    background: hsl(var(--background));
-  }
-
-  .container {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 0 1rem;
-  }
-
-  @media (min-width: 640px) {
-    .container {
-      padding: 0 1.5rem;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .container {
-      padding: 0 2rem;
-    }
-  }
-
-  .watch-main {
-    padding-top: 8rem;
-    padding-bottom: 1.5rem;
-  }
-
-  @media (min-width: 640px) {
-    .watch-main {
-      padding-top: 9rem;
-      padding-bottom: 2rem;
-    }
-  }
-
-  .player-wrapper {
-    margin-bottom: 1rem;
-  }
-
-  @media (min-width: 640px) {
-    .player-wrapper {
-      margin-bottom: 1.5rem;
-    }
-  }
-
-  .player-container {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-  }
-
-  .player-iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-  }
-
-  .controls-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
-    margin-bottom: 1rem;
-  }
-
-  @media (min-width: 640px) {
-    .controls-grid {
-      gap: 1.5rem;
-      margin-bottom: 1.5rem;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .controls-grid {
-      grid-template-columns: 2fr 1fr;
-    }
-  }
-
-  .server-buttons {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
-  }
-
-  @media (min-width: 640px) {
-    .server-buttons {
-      grid-template-columns: repeat(4, 1fr);
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .server-buttons {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (min-width: 1280px) {
-    .server-buttons {
-      grid-template-columns: repeat(4, 1fr);
-    }
-  }
-
-  .episode-nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 1rem;
-    padding: 1rem;
-    background: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
-    border-radius: 0.5rem;
-  }
-
-  @media (min-width: 640px) {
-    .episode-nav {
-      margin-bottom: 1.5rem;
-    }
-  }
-
-  .episode-display {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
-  }
-
-  .episode-label {
-    font-size: 0.75rem;
-    color: hsl(var(--muted-foreground));
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .episode-current {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: hsl(var(--foreground));
-  }
-
-  @media (min-width: 640px) {
-    .episode-current {
-      font-size: 1.25rem;
-    }
-  }
-
-  .episode-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  @media (min-width: 640px) {
-    .episode-grid {
-      gap: 1.5rem;
-    }
-  }
-
-  @media (min-width: 768px) {
-    .episode-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  .episode-grid :global(.card-header) {
-    padding: 1rem;
-  }
-
-  @media (min-width: 640px) {
-    .episode-grid :global(.card-header) {
-      padding: 1.25rem;
-    }
-  }
-
-  .episode-grid :global(.card-content) {
-    padding: 1rem;
-    padding-top: 0;
-  }
-
-  @media (min-width: 640px) {
-    .episode-grid :global(.card-content) {
-      padding: 1.25rem;
-      padding-top: 0;
-    }
-  }
-
-  .season-buttons,
-  .episode-buttons {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.5rem;
-  }
-
-  @media (min-width: 480px) {
-    .season-buttons,
-    .episode-buttons {
-      grid-template-columns: repeat(5, 1fr);
-    }
-  }
-
-  @media (min-width: 640px) {
-    .season-buttons,
-    .episode-buttons {
-      grid-template-columns: repeat(6, 1fr);
-    }
-  }
-
-  @media (min-width: 768px) {
-    .season-buttons,
-    .episode-buttons {
-      grid-template-columns: repeat(5, 1fr);
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .season-buttons,
-    .episode-buttons {
-      grid-template-columns: repeat(6, 1fr);
-    }
-  }
-
-  .episode-buttons {
-    max-height: 14rem;
-    overflow-y: auto;
-  }
-
-  @media (min-width: 640px) {
-    .episode-buttons {
-      max-height: 16rem;
-    }
-  }
-</style>
