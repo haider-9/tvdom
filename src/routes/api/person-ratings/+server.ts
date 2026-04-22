@@ -1,14 +1,10 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { connectToDatabase } from '$lib/server/database';
-import { PersonRating } from '$lib/server/models/PersonRating';
-import { User } from '$lib/server/models/User';
-import mongoose from 'mongoose';
+import { databases, DATABASE_ID, COLLECTIONS, ID } from '$lib/appwrite.js';
+import { Query } from 'appwrite';
 
 export const GET: RequestHandler = async ({ url }) => {
   try {
-    await connectToDatabase();
-    
     const userId = url.searchParams.get('userId');
     const personId = url.searchParams.get('personId');
     
@@ -16,20 +12,20 @@ export const GET: RequestHandler = async ({ url }) => {
       return json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return json({ error: 'Invalid user ID format' }, { status: 400 });
-    }
-
-    let query: any = { userId };
+    let queries = [Query.equal('userId', userId)];
     if (personId) {
-      query.personId = personId;
+      queries.push(Query.equal('personId', personId));
     }
+    queries.push(Query.orderDesc('$createdAt'));
 
-    const ratings = await PersonRating.find(query).sort({ createdAt: -1 });
+    const ratings = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.PERSON_RATINGS,
+      queries
+    );
     
-    return json({ ratings });
-  } catch (error) {
+    return json({ ratings: ratings.documents });
+  } catch (error: any) {
     console.error('Error fetching person ratings:', error);
     return json({ error: 'Failed to fetch person ratings' }, { status: 500 });
   }
@@ -37,8 +33,6 @@ export const GET: RequestHandler = async ({ url }) => {
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
-    await connectToDatabase();
-    
     const { userId, personId, rating, review, personName, personImage, isSpoiler, tags } = await request.json();
     
     if (!userId || !personId || !rating || !personName) {
@@ -49,41 +43,53 @@ export const POST: RequestHandler = async ({ request }) => {
       return json({ error: 'Rating must be between 1 and 10' }, { status: 400 });
     }
 
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return json({ error: 'Invalid user ID format' }, { status: 400 });
-    }
-
-    // Check if rating already exists and update it
-    const existingRating = await PersonRating.findOne({ userId, personId });
+    // Check if rating already exists
+    const existingRatings = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.PERSON_RATINGS,
+      [
+        Query.equal('userId', userId),
+        Query.equal('personId', personId),
+        Query.limit(1)
+      ]
+    );
     
-    if (existingRating) {
-      existingRating.rating = rating;
-      existingRating.review = review;
-      existingRating.isSpoiler = isSpoiler || false;
-      existingRating.tags = tags || [];
-      existingRating.updatedAt = new Date();
-      
-      await existingRating.save();
-      
-      return json({ success: true, rating: existingRating });
+    let ratingDoc;
+    
+    if (existingRatings.documents.length > 0) {
+      // Update existing rating
+      ratingDoc = await databases.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.PERSON_RATINGS,
+        existingRatings.documents[0].$id,
+        {
+          rating,
+          review: review || '',
+          isSpoiler: isSpoiler || false,
+          tags: tags || []
+        }
+      );
     } else {
-      const newRating = new PersonRating({
-        userId,
-        personId,
-        rating,
-        review,
-        personName,
-        personImage,
-        isSpoiler: isSpoiler || false,
-        tags: tags || [],
-      });
-
-      await newRating.save();
-
-      return json({ success: true, rating: newRating });
+      // Create new rating
+      ratingDoc = await databases.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.PERSON_RATINGS,
+        ID.unique(),
+        {
+          userId,
+          personId,
+          rating,
+          review: review || '',
+          personName,
+          personImage: personImage || '',
+          isSpoiler: isSpoiler || false,
+          tags: tags || []
+        }
+      );
     }
-  } catch (error) {
+
+    return json({ success: true, rating: ratingDoc });
+  } catch (error: any) {
     console.error('Error adding person rating:', error);
     return json({ error: 'Failed to add person rating' }, { status: 500 });
   }
@@ -91,8 +97,6 @@ export const POST: RequestHandler = async ({ request }) => {
 
 export const DELETE: RequestHandler = async ({ url }) => {
   try {
-    await connectToDatabase();
-    
     const userId = url.searchParams.get('userId');
     const personId = url.searchParams.get('personId');
     
@@ -100,19 +104,29 @@ export const DELETE: RequestHandler = async ({ url }) => {
       return json({ error: 'User ID and Person ID are required' }, { status: 400 });
     }
 
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return json({ error: 'Invalid user ID format' }, { status: 400 });
-    }
-
-    const deletedRating = await PersonRating.findOneAndDelete({ userId, personId });
+    // Find the rating to delete
+    const existingRatings = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.PERSON_RATINGS,
+      [
+        Query.equal('userId', userId),
+        Query.equal('personId', personId),
+        Query.limit(1)
+      ]
+    );
     
-    if (!deletedRating) {
+    if (existingRatings.documents.length === 0) {
       return json({ error: 'Rating not found' }, { status: 404 });
     }
 
+    await databases.deleteDocument(
+      DATABASE_ID,
+      COLLECTIONS.PERSON_RATINGS,
+      existingRatings.documents[0].$id
+    );
+
     return json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error deleting person rating:', error);
     return json({ error: 'Failed to delete person rating' }, { status: 500 });
   }

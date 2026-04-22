@@ -3,7 +3,7 @@
     import MediaCard from "$lib/components/MediaCard.svelte";
     import Hero from "$lib/components/Hero.svelte";
     import { Button } from "$lib/components/ui/button";
-    import { userStore } from "$lib/stores/user.svelte.js";
+    import { userStore } from "$lib/stores/user.svelte";
     import { Star, Users, Eye, Film, ArrowRight } from "lucide-svelte";
 
     let { data }: { data: PageData } = $props();

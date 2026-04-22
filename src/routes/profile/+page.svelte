@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { userStore } from "$lib/stores/user.svelte.js";
+  import { userStore } from "$lib/stores/user.svelte";
   import CurrentlyWatching from "$lib/components/CurrentlyWatching.svelte";
   import {
     User,

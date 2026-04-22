@@ -58,12 +58,13 @@
     if (!debouncedSearchQuery) return characters as Character[];
     
     const query = debouncedSearchQuery.toLowerCase();
-    return (characters as Character[]).filter((character) => 
-      character.character?.toLowerCase().includes(query) ||
-      character.name?.toLowerCase().includes(query) ||
-      character.mediaTitle?.toLowerCase().includes(query) ||
-      character.genres?.some((genre) => genre.name?.toLowerCase().includes(query))
-    );
+    return (characters as Character[]).filter((char) => {
+      const character = char as Character;
+      return character.character?.toLowerCase().includes(query) ||
+        character.name?.toLowerCase().includes(query) ||
+        character.mediaTitle?.toLowerCase().includes(query) ||
+        character.genres?.some((genre) => genre.name?.toLowerCase().includes(query));
+    });
   });
 
   function clearSearch() {
@@ -203,18 +204,19 @@
 
         {#if characters.length > 0}
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {#each characters.slice(0, 8) as character, index (character.credit_id || index)}
+            {#each characters.slice(0, 8) as character, index ((character as Character).credit_id || index)}
+              {@const typedCharacter = character as Character}
               <button 
                 class="group block cursor-pointer w-full text-left" 
-                onclick={() => character.credit_id && goToCharacter(character.credit_id)}
+                onclick={() => typedCharacter.credit_id && goToCharacter(typedCharacter.credit_id)}
               >
                 <Card.Root class="relative overflow-hidden rounded-2xl md:rounded-3xl w-full bg-card/40 border border-border/60 transition-all duration-300 hover:shadow-lg hover:border-primary/20">
                   <!-- Character image with backdrop -->
                   <div class="relative h-64 sm:h-72 md:h-80 lg:h-96 w-full">
-                    {#if character.profile_path}
+                    {#if typedCharacter.profile_path}
                       <img
-                        src="https://image.tmdb.org/t/p/w500{character.profile_path}"
-                        alt={character.name}
+                        src="https://image.tmdb.org/t/p/w500{typedCharacter.profile_path}"
+                        alt={typedCharacter.name}
                         class="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110"
                         loading="lazy"
                       />
@@ -240,27 +242,27 @@
                         <!-- Badges / meta row -->
                         <div class="flex items-center gap-1.5 sm:gap-2 text-xs">
                           <Badge class="bg-white/10 backdrop-blur px-2 py-0.5 sm:px-3 sm:py-1 uppercase tracking-wide text-[0.65rem] sm:text-[0.7rem] md:text-xs">
-                            {character.mediaType}
+                            {typedCharacter.mediaType}
                           </Badge>
 
-                          {#if character.mediaYear}
+                          {#if typedCharacter.mediaYear}
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full bg-black/40 backdrop-blur text-[0.65rem] sm:text-[0.7rem] md:text-xs text-white/90">
                               <Calendar class="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                              {character.mediaYear}
+                              {typedCharacter.mediaYear}
                             </span>
                           {/if}
 
-                          {#if character.mediaRating}
+                          {#if typedCharacter.mediaRating}
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full bg-black/40 backdrop-blur text-[0.65rem] sm:text-[0.7rem] md:text-xs text-white/90 ml-auto">
                               <Star class="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-yellow-400 text-yellow-400" />
-                              <span class="font-semibold">{character.mediaRating.toFixed(1)}</span>
+                              <span class="font-semibold">{typedCharacter.mediaRating.toFixed(1)}</span>
                             </span>
                           {/if}
                         </div>
 
                         <!-- Character Name -->
                         <Card.Title class="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white drop-shadow-sm line-clamp-2 group-hover:text-primary transition-colors duration-300">
-                          {character.character || 'Unknown Character'}
+                          {typedCharacter.character || 'Unknown Character'}
                         </Card.Title>
 
                         <!-- Actor name -->
@@ -271,11 +273,11 @@
                             <button
                               onclick={(e) => {
                                 e.stopPropagation();
-                                goToActor(character.id);
+                                goToActor(typedCharacter.id);
                               }}
                               class="text-primary hover:text-primary/80 transition-colors underline decoration-1 underline-offset-2"
                             >
-                              {character.name}
+                              {typedCharacter.name}
                             </button>
                           </span>
                         </div>
@@ -286,11 +288,11 @@
                           <button
                             onclick={(e) => {
                               e.stopPropagation();
-                              goToMedia(character.mediaType, character.media.id);
+                              goToMedia(typedCharacter.mediaType, typedCharacter.media.id);
                             }}
                             class="text-primary hover:text-primary/80 transition-colors font-medium ml-1"
                           >
-                            {character.mediaTitle}
+                            {typedCharacter.mediaTitle}
                           </button>
                         </div>
                       </div>
@@ -385,18 +387,19 @@
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {#each filteredCharacters as character, index (character.credit_id || index)}
+            {#each filteredCharacters as character, index ((character as Character).credit_id || index)}
+              {@const typedCharacter = character as Character}
               <button 
                 class="group block cursor-pointer w-full text-left" 
-                onclick={() => character.credit_id && goToCharacter(character.credit_id)}
+                onclick={() => typedCharacter.credit_id && goToCharacter(typedCharacter.credit_id)}
               >
                 <Card.Root class="relative overflow-hidden rounded-2xl md:rounded-3xl w-full bg-card/40 border border-border/60 transition-all duration-300 hover:shadow-lg hover:border-primary/20">
                   <!-- Character image with backdrop -->
                   <div class="relative h-64 sm:h-72 md:h-80 lg:h-96 w-full">
-                    {#if character.profile_path}
+                    {#if typedCharacter.profile_path}
                       <img
-                        src="https://image.tmdb.org/t/p/w500{character.profile_path}"
-                        alt={character.name}
+                        src="https://image.tmdb.org/t/p/w500{typedCharacter.profile_path}"
+                        alt={typedCharacter.name}
                         class="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110"
                         loading="lazy"
                       />
@@ -415,27 +418,27 @@
                         <!-- Badges / meta row -->
                         <div class="flex items-center gap-1.5 sm:gap-2 text-xs">
                           <Badge class="bg-white/10 backdrop-blur px-2 py-0.5 sm:px-3 sm:py-1 uppercase tracking-wide text-[0.65rem] sm:text-[0.7rem] md:text-xs">
-                            {character.mediaType}
+                            {typedCharacter.mediaType}
                           </Badge>
 
-                          {#if character.mediaYear}
+                          {#if typedCharacter.mediaYear}
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full bg-black/40 backdrop-blur text-[0.65rem] sm:text-[0.7rem] md:text-xs text-white/90">
                               <Calendar class="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                              {character.mediaYear}
+                              {typedCharacter.mediaYear}
                             </span>
                           {/if}
 
-                          {#if character.mediaRating}
+                          {#if typedCharacter.mediaRating}
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full bg-black/40 backdrop-blur text-[0.65rem] sm:text-[0.7rem] md:text-xs text-white/90 ml-auto">
                               <Star class="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-yellow-400 text-yellow-400" />
-                              <span class="font-semibold">{character.mediaRating.toFixed(1)}</span>
+                              <span class="font-semibold">{typedCharacter.mediaRating.toFixed(1)}</span>
                             </span>
                           {/if}
                         </div>
 
                         <!-- Character Name -->
                         <Card.Title class="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white drop-shadow-sm line-clamp-2 group-hover:text-primary transition-colors duration-300">
-                          {character.character || 'Unknown Character'}
+                          {typedCharacter.character || 'Unknown Character'}
                         </Card.Title>
 
                         <!-- Actor name -->
@@ -446,11 +449,11 @@
                             <button
                               onclick={(e) => {
                                 e.stopPropagation();
-                                goToActor(character.id);
+                                goToActor(typedCharacter.id);
                               }}
                               class="text-primary hover:text-primary/80 transition-colors underline decoration-1 underline-offset-2"
                             >
-                              {character.name}
+                              {typedCharacter.name}
                             </button>
                           </span>
                         </div>
@@ -461,11 +464,11 @@
                           <button
                             onclick={(e) => {
                               e.stopPropagation();
-                              goToMedia(character.mediaType, character.media.id);
+                              goToMedia(typedCharacter.mediaType, typedCharacter.media.id);
                             }}
                             class="text-primary hover:text-primary/80 transition-colors font-medium ml-1"
                           >
-                            {character.mediaTitle}
+                            {typedCharacter.mediaTitle}
                           </button>
                         </div>
                       </div>

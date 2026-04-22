@@ -1,6 +1,165 @@
 # TVDom
 
-A modern, elegant TV and Movie discovery platform built with SvelteKit and TMDB API. Discover, explore, and track your favorite movies, TV shows, and celebrities with a beautiful, Netflix-inspired interface.
+A modern, elegant TV and Movie discovery platform built with SvelteKit and Appwrite. Discover, explore, and track your favorite movies, TV shows, and celebrities with a beautiful, Netflix-inspired interface.
+
+## 🚀 Features
+
+- **Movie & TV Discovery**: Browse trending, popular, and top-rated content
+- **User Authentication**: Secure login and registration with Appwrite
+- **Personal Ratings**: Rate and review movies, TV shows, and celebrities
+- **Watchlist Management**: Add items to your watchlist and track what you've watched
+- **Social Features**: Follow other users and see their activity
+- **Person Profiles**: Detailed information about actors, directors, and crew
+- **Real-time Updates**: Live updates powered by Appwrite's real-time capabilities
+- **Responsive Design**: Beautiful interface that works on all devices
+
+## 🛠 Tech Stack
+
+- **Frontend**: SvelteKit, TypeScript, Tailwind CSS
+- **Backend**: Appwrite (Database, Authentication, Storage)
+- **APIs**: The Movie Database (TMDB)
+- **Image Storage**: Cloudinary
+- **Deployment**: Vercel/Netlify compatible
+
+## 📦 Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/tvdom.git
+   cd tvdom
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Fill in your environment variables:
+   - `TMDB_API_KEY`: Get from [TMDB](https://www.themoviedb.org/settings/api)
+   - `PUBLIC_CLOUDINARY_*`: Get from [Cloudinary](https://cloudinary.com/)
+   - `PUBLIC_APPWRITE_*`: Get from [Appwrite](https://appwrite.io/)
+
+4. **Set up Appwrite database**
+   ```bash
+   node scripts/setup-appwrite.js
+   ```
+
+5. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+## 🗄️ Database Setup
+
+This project uses Appwrite as the backend. To set up the database:
+
+1. Create an Appwrite project at [Appwrite Cloud](https://cloud.appwrite.io)
+2. Add your project credentials to `.env`
+3. Run the setup script: `node scripts/setup-appwrite.js`
+
+The script will create:
+- Database: `tvdom_main`
+- Collections: `users`, `ratings`, `watchlist`, `watched`, `follows`, `person_ratings`, `person_favorites`, `currently_watching`
+
+## 🔧 Configuration
+
+### Appwrite Collections
+
+The application uses the following Appwrite collections:
+
+- **users**: User profiles and metadata
+- **ratings**: Movie/TV show ratings and reviews
+- **watchlist**: User watchlist items
+- **watched**: Items marked as watched
+- **follows**: User follow relationships
+- **person_ratings**: Celebrity/person ratings
+- **person_favorites**: Favorite celebrities
+- **currently_watching**: Real-time watching status
+
+### Environment Variables
+
+```env
+# TMDB API
+TMDB_API_KEY=your_tmdb_api_key
+TMDB_ACCESS_TOKEN=your_tmdb_access_token
+
+# Cloudinary
+PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
+PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_upload_preset
+
+# Appwrite
+PUBLIC_APPWRITE_PROJECT_ID=your_project_id
+PUBLIC_APPWRITE_PROJECT_NAME=your_project_name
+PUBLIC_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
+APPWRITE_API_KEY=your_server_api_key
+```
+
+## 🚀 Deployment
+
+1. **Build the application**
+   ```bash
+   npm run build
+   ```
+
+2. **Deploy to your preferred platform**
+   - Vercel: `vercel deploy`
+   - Netlify: `netlify deploy`
+   - Or any other SvelteKit-compatible platform
+
+## 📱 Features Overview
+
+### Authentication
+- Secure user registration and login
+- Session management with Appwrite
+- Password reset functionality
+
+### Media Discovery
+- Browse movies and TV shows
+- Search functionality
+- Filter by genre, year, rating
+- Trending and popular content
+
+### User Features
+- Personal ratings and reviews
+- Watchlist management
+- Watch history tracking
+- Social following system
+
+### Real-time Features
+- Live activity feeds
+- Real-time notifications
+- Currently watching status
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [The Movie Database (TMDB)](https://www.themoviedb.org/) for the comprehensive movie and TV data
+- [Appwrite](https://appwrite.io/) for the powerful backend-as-a-service platform
+- [SvelteKit](https://kit.svelte.dev/) for the amazing full-stack framework
+- [Tailwind CSS](https://tailwindcss.com/) for the utility-first CSS framework
+
+## 📞 Support
+
+If you have any questions or need help, please:
+- Open an issue on GitHub
+- Check the [Appwrite documentation](https://appwrite.io/docs)
+- Visit the [SvelteKit documentation](https://kit.svelte.dev/docs)
 
 ## ✨ Features
 

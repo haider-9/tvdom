@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { userStore } from '$lib/stores/user.svelte.js';
+	import { userStore } from '$lib/stores/user.svelte';
 	import { Eye, EyeOff, Mail, Lock, User, X, Check } from 'lucide-svelte';
 	import type { RegisterData } from '$lib/user-types.js';
 

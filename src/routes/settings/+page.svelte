@@ -5,7 +5,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import { Switch } from '$lib/components/ui/switch';
   import { themeStore, type Theme } from '$lib/stores/theme.svelte.js';
-  import { userStore } from '$lib/stores/user.svelte.js';
+  import { userStore } from '$lib/stores/user.svelte';
   import { toast } from 'svelte-sonner';
   import { goto } from '$app/navigation';
 

@@ -17,7 +17,7 @@
     import { Button } from "$lib/components/ui/button";
     import { Badge } from "$lib/components/ui/badge";
     import { notificationStore } from "$lib/stores/notification.svelte.js";
-    import { userStore } from "$lib/stores/user.svelte.js";
+    import { userStore } from "$lib/stores/user.svelte";
     import { goto } from "$app/navigation";
     // import { formatDistanceToNow } from "date-fns";
 

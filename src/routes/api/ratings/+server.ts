@@ -1,28 +1,26 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { connectToDatabase } from '$lib/server/database';
-import { Rating } from '$lib/server/models/Rating';
-import { User } from '$lib/server/models/User';
-import mongoose from 'mongoose';
+import { databases, DATABASE_ID, COLLECTIONS, ID } from '$lib/appwrite.js';
+import { Query } from 'appwrite';
 
 export const GET: RequestHandler = async ({ url }) => {
   try {
-    await connectToDatabase();
-    
     const userId = url.searchParams.get('userId');
     if (!userId) {
       return json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return json({ error: 'Invalid user ID format' }, { status: 400 });
-    }
-
-    const ratings = await Rating.find({ userId }).sort({ createdAt: -1 });
+    const ratings = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.RATINGS,
+      [
+        Query.equal('userId', userId),
+        Query.orderDesc('$createdAt')
+      ]
+    );
     
-    return json({ ratings });
-  } catch (error) {
+    return json({ ratings: ratings.documents });
+  } catch (error: any) {
     console.error('Error fetching ratings:', error);
     return json({ error: 'Failed to fetch ratings' }, { status: 500 });
   }
@@ -30,8 +28,6 @@ export const GET: RequestHandler = async ({ url }) => {
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
-    await connectToDatabase();
-    
     const { userId, mediaId, mediaType, rating, review, mediaTitle, mediaPoster, isSpoiler, tags } = await request.json();
     
     if (!userId || !mediaId || !mediaType || !rating || !mediaTitle) {
@@ -42,49 +38,82 @@ export const POST: RequestHandler = async ({ request }) => {
       return json({ error: 'Rating must be between 1 and 10' }, { status: 400 });
     }
 
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return json({ error: 'Invalid user ID format' }, { status: 400 });
-    }
-
-    // Check if rating already exists and update it
-    const existingRating = await Rating.findOne({ userId, mediaId });
+    // Check if rating already exists
+    const existingRatings = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.RATINGS,
+      [
+        Query.equal('userId', userId),
+        Query.equal('mediaId', mediaId),
+        Query.limit(1)
+      ]
+    );
     
-    if (existingRating) {
-      existingRating.rating = rating;
-      existingRating.review = review;
-      existingRating.isSpoiler = isSpoiler || false;
-      existingRating.tags = tags || [];
-      existingRating.updatedAt = new Date();
-      
-      await existingRating.save();
-      
-      // Recalculate user's average rating
-      await updateUserAverageRating(userId);
-      
-      return json({ success: true, rating: existingRating });
+    let ratingDoc;
+    
+    if (existingRatings.documents.length > 0) {
+      // Update existing rating
+      ratingDoc = await databases.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.RATINGS,
+        existingRatings.documents[0].$id,
+        {
+          rating,
+          review: review || '',
+          isSpoiler: isSpoiler || false,
+          tags: tags || []
+        }
+      );
     } else {
-      const newRating = new Rating({
-        userId,
-        mediaId,
-        mediaType,
-        rating,
-        review,
-        mediaTitle,
-        mediaPoster,
-        isSpoiler: isSpoiler || false,
-        tags: tags || [],
-      });
+      // Create new rating
+      ratingDoc = await databases.createDocument(
+        DATABASE_ID,
+        COLLECTIONS.RATINGS,
+        ID.unique(),
+        {
+          userId,
+          mediaId,
+          mediaType,
+          rating,
+          review: review || '',
+          mediaTitle,
+          mediaPoster: mediaPoster || '',
+          isSpoiler: isSpoiler || false,
+          likes: 0,
+          dislikes: 0,
+          tags: tags || [],
+          rewatched: false
+        }
+      );
 
-      await newRating.save();
+      // Update user's rating count
+      try {
+        const userRatings = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.RATINGS,
+          [Query.equal('userId', userId)]
+        );
+        
+        const totalRatings = userRatings.documents.length;
+        const sum = userRatings.documents.reduce((acc: number, r: any) => acc + r.rating, 0);
+        const averageRating = totalRatings > 0 ? Math.round((sum / totalRatings) * 10) / 10 : 0;
 
-      // Update user's rating count and average
-      await User.findByIdAndUpdate(userId, { $inc: { totalRatings: 1 } });
-      await updateUserAverageRating(userId);
-
-      return json({ success: true, rating: newRating });
+        await databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.USERS,
+          userId,
+          {
+            totalRatings,
+            averageRating
+          }
+        );
+      } catch (userUpdateError) {
+        console.error('Error updating user stats:', userUpdateError);
+      }
     }
-  } catch (error) {
+
+    return json({ success: true, rating: ratingDoc });
+  } catch (error: any) {
     console.error('Error adding rating:', error);
     return json({ error: 'Failed to add rating' }, { status: 500 });
   }
@@ -92,8 +121,6 @@ export const POST: RequestHandler = async ({ request }) => {
 
 export const DELETE: RequestHandler = async ({ url }) => {
   try {
-    await connectToDatabase();
-    
     const userId = url.searchParams.get('userId');
     const mediaId = url.searchParams.get('mediaId');
     
@@ -101,42 +128,55 @@ export const DELETE: RequestHandler = async ({ url }) => {
       return json({ error: 'User ID and Media ID are required' }, { status: 400 });
     }
 
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return json({ error: 'Invalid user ID format' }, { status: 400 });
-    }
-
-    const deletedRating = await Rating.findOneAndDelete({ userId, mediaId });
+    // Find the rating to delete
+    const existingRatings = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.RATINGS,
+      [
+        Query.equal('userId', userId),
+        Query.equal('mediaId', mediaId),
+        Query.limit(1)
+      ]
+    );
     
-    if (!deletedRating) {
+    if (existingRatings.documents.length === 0) {
       return json({ error: 'Rating not found' }, { status: 404 });
     }
 
+    await databases.deleteDocument(
+      DATABASE_ID,
+      COLLECTIONS.RATINGS,
+      existingRatings.documents[0].$id
+    );
+
     // Update user's rating count and average
-    await User.findByIdAndUpdate(userId, { $inc: { totalRatings: -1 } });
-    await updateUserAverageRating(userId);
+    try {
+      const userRatings = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.RATINGS,
+        [Query.equal('userId', userId)]
+      );
+      
+      const totalRatings = userRatings.documents.length;
+      const sum = userRatings.documents.reduce((acc: number, r: any) => acc + r.rating, 0);
+      const averageRating = totalRatings > 0 ? Math.round((sum / totalRatings) * 10) / 10 : 0;
+
+      await databases.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.USERS,
+        userId,
+        {
+          totalRatings,
+          averageRating
+        }
+      );
+    } catch (userUpdateError) {
+      console.error('Error updating user stats:', userUpdateError);
+    }
 
     return json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error deleting rating:', error);
     return json({ error: 'Failed to delete rating' }, { status: 500 });
   }
 };
-
-async function updateUserAverageRating(userId: string) {
-  // Validate ObjectId format
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
-    throw new Error('Invalid user ID format');
-  }
-
-  const ratings = await Rating.find({ userId });
-  if (ratings.length === 0) {
-    await User.findByIdAndUpdate(userId, { averageRating: 0 });
-    return;
-  }
-  
-  const sum = ratings.reduce((acc, rating) => acc + rating.rating, 0);
-  const average = Math.round((sum / ratings.length) * 10) / 10;
-  
-  await User.findByIdAndUpdate(userId, { averageRating: average });
-}

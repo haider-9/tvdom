@@ -1,15 +1,10 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { connectToDatabase } from "$lib/server/database";
-import { Follow } from "$lib/server/models/Follow";
-import { User } from "$lib/server/models/User";
-import { Notification } from "$lib/server/models/Notification";
-import mongoose from "mongoose";
+import { databases, DATABASE_ID, COLLECTIONS, ID } from '$lib/appwrite.js';
+import { Query } from 'appwrite';
 
 export const GET: RequestHandler = async ({ url }) => {
   try {
-    await connectToDatabase();
-
     const userId = url.searchParams.get("userId");
     const type = url.searchParams.get("type"); // 'following' or 'followers'
 
@@ -17,26 +12,31 @@ export const GET: RequestHandler = async ({ url }) => {
       return json({ error: "User ID is required" }, { status: 400 });
     }
 
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return json({ error: "Invalid user ID format" }, { status: 400 });
-    }
-
     let follows;
     if (type === "followers") {
       // Get users who follow this user
-      follows = await Follow.find({ followingId: userId })
-        .populate("followerId", "username displayName avatar")
-        .sort({ createdAt: -1 });
+      follows = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.FOLLOWS,
+        [
+          Query.equal('followingId', userId),
+          Query.orderDesc('$createdAt')
+        ]
+      );
     } else {
       // Get users this user follows (default)
-      follows = await Follow.find({ followerId: userId })
-        .populate("followingId", "username displayName avatar")
-        .sort({ createdAt: -1 });
+      follows = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.FOLLOWS,
+        [
+          Query.equal('followerId', userId),
+          Query.orderDesc('$createdAt')
+        ]
+      );
     }
 
-    return json({ follows });
-  } catch (error) {
+    return json({ follows: follows.documents });
+  } catch (error: any) {
     console.error("Error fetching follows:", error);
     return json({ error: "Failed to fetch follows" }, { status: 500 });
   }
@@ -44,8 +44,6 @@ export const GET: RequestHandler = async ({ url }) => {
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
-    await connectToDatabase();
-
     const { followerId, followingId } = await request.json();
 
     if (!followerId || !followingId) {
@@ -55,72 +53,82 @@ export const POST: RequestHandler = async ({ request }) => {
       );
     }
 
-    // Validate ObjectId format
-    if (
-      !mongoose.Types.ObjectId.isValid(followerId) ||
-      !mongoose.Types.ObjectId.isValid(followingId)
-    ) {
-      return json({ error: "Invalid user ID format" }, { status: 400 });
-    }
-
     // Prevent self-following
     if (followerId === followingId) {
       return json({ error: "Cannot follow yourself" }, { status: 400 });
     }
 
     // Check if already following
-    const existingFollow = await Follow.findOne({ followerId, followingId });
-    if (existingFollow) {
+    const existingFollows = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.FOLLOWS,
+      [
+        Query.equal('followerId', followerId),
+        Query.equal('followingId', followingId),
+        Query.limit(1)
+      ]
+    );
+
+    if (existingFollows.documents.length > 0) {
       return json({ error: "Already following this user" }, { status: 409 });
     }
 
     // Check if both users exist
-    const [follower, following] = await Promise.all([
-      User.findById(followerId),
-      User.findById(followingId),
-    ]);
-
-    if (!follower || !following) {
+    try {
+      await Promise.all([
+        databases.getDocument(DATABASE_ID, COLLECTIONS.USERS, followerId),
+        databases.getDocument(DATABASE_ID, COLLECTIONS.USERS, followingId)
+      ]);
+    } catch (userError) {
       return json({ error: "User not found" }, { status: 404 });
     }
 
     // Create follow relationship
-    const follow = new Follow({
-      followerId,
-      followingId,
-    });
-
-    await follow.save();
+    const follow = await databases.createDocument(
+      DATABASE_ID,
+      COLLECTIONS.FOLLOWS,
+      ID.unique(),
+      {
+        followerId,
+        followingId
+      }
+    );
 
     // Update follow counts
-    await Promise.all([
-      User.findByIdAndUpdate(followerId, { $inc: { followingCount: 1 } }),
-      User.findByIdAndUpdate(followingId, { $inc: { followerCount: 1 } }),
-    ]);
-
-    // Create notification for the user being followed
     try {
-      const notification = new Notification({
-        userId: followingId,
-        type: "follow",
-        title: "New Follower",
-        message: `${follower.displayName} started following you`,
-        data: {
-          actorId: followerId,
-          actorName: follower.displayName,
-          actorAvatar: follower.avatar,
-          followId: follow._id.toString(),
-        },
-        read: false,
-      });
-      await notification.save();
-    } catch (notificationError) {
-      console.error("Failed to create follow notification:", notificationError);
-      // Don't fail the follow operation if notification fails
+      const [followerFollows, followingFollowers] = await Promise.all([
+        databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.FOLLOWS,
+          [Query.equal('followerId', followerId)]
+        ),
+        databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.FOLLOWS,
+          [Query.equal('followingId', followingId)]
+        )
+      ]);
+
+      await Promise.all([
+        databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.USERS,
+          followerId,
+          { followingCount: followerFollows.documents.length }
+        ),
+        databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.USERS,
+          followingId,
+          { followerCount: followingFollowers.documents.length }
+        )
+      ]);
+    } catch (countUpdateError) {
+      console.error('Error updating follow counts:', countUpdateError);
     }
 
     return json({ success: true, follow });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating follow:", error);
     return json({ error: "Failed to follow user" }, { status: 500 });
   }
@@ -128,8 +136,6 @@ export const POST: RequestHandler = async ({ request }) => {
 
 export const DELETE: RequestHandler = async ({ url }) => {
   try {
-    await connectToDatabase();
-
     const followerId = url.searchParams.get("followerId");
     const followingId = url.searchParams.get("followingId");
 
@@ -140,57 +146,62 @@ export const DELETE: RequestHandler = async ({ url }) => {
       );
     }
 
-    // Validate ObjectId format
-    if (
-      !mongoose.Types.ObjectId.isValid(followerId) ||
-      !mongoose.Types.ObjectId.isValid(followingId)
-    ) {
-      return json({ error: "Invalid user ID format" }, { status: 400 });
-    }
+    // Find the follow relationship to delete
+    const existingFollows = await databases.listDocuments(
+      DATABASE_ID,
+      COLLECTIONS.FOLLOWS,
+      [
+        Query.equal('followerId', followerId),
+        Query.equal('followingId', followingId),
+        Query.limit(1)
+      ]
+    );
 
-    const deletedFollow = await Follow.findOneAndDelete({
-      followerId,
-      followingId,
-    });
-
-    if (!deletedFollow) {
+    if (existingFollows.documents.length === 0) {
       return json({ error: "Follow relationship not found" }, { status: 404 });
     }
 
-    // Update follow counts
-    const [follower] = await Promise.all([
-      User.findById(followerId),
-      User.findByIdAndUpdate(followerId, { $inc: { followingCount: -1 } }),
-      User.findByIdAndUpdate(followingId, { $inc: { followerCount: -1 } }),
-    ]);
+    await databases.deleteDocument(
+      DATABASE_ID,
+      COLLECTIONS.FOLLOWS,
+      existingFollows.documents[0].$id
+    );
 
-    // Create unfollow notification (optional - you might not want this)
+    // Update follow counts
     try {
-      if (follower) {
-        const notification = new Notification({
-          userId: followingId,
-          type: "unfollow",
-          title: "Unfollowed",
-          message: `${follower.displayName} unfollowed you`,
-          data: {
-            actorId: followerId,
-            actorName: follower.displayName,
-            actorAvatar: follower.avatar,
-          },
-          read: false,
-        });
-        await notification.save();
-      }
-    } catch (notificationError) {
-      console.error(
-        "Failed to create unfollow notification:",
-        notificationError,
-      );
-      // Don't fail the unfollow operation if notification fails
+      const [followerFollows, followingFollowers] = await Promise.all([
+        databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.FOLLOWS,
+          [Query.equal('followerId', followerId)]
+        ),
+        databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.FOLLOWS,
+          [Query.equal('followingId', followingId)]
+        )
+      ]);
+
+      await Promise.all([
+        databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.USERS,
+          followerId,
+          { followingCount: followerFollows.documents.length }
+        ),
+        databases.updateDocument(
+          DATABASE_ID,
+          COLLECTIONS.USERS,
+          followingId,
+          { followerCount: followingFollowers.documents.length }
+        )
+      ]);
+    } catch (countUpdateError) {
+      console.error('Error updating follow counts:', countUpdateError);
     }
 
     return json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error unfollowing user:", error);
     return json({ error: "Failed to unfollow user" }, { status: 500 });
   }

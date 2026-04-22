@@ -17,7 +17,7 @@
     import { Dialog as DialogPrimitive } from "bits-ui";
     import { Input } from "$lib/components/ui/input";
     import ThemeToggle from "./ThemeToggle.svelte";
-    import { userStore } from "$lib/stores/user.svelte.js";
+    import { userStore } from "$lib/stores/user.svelte";
     import { goto } from "$app/navigation";
     import NotificationDropdown from "./NotificationDropdown.svelte";
 

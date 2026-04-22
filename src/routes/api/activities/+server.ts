@@ -1,15 +1,10 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { connectToDatabase } from "$lib/server/database";
-import { User } from "$lib/server/models/User";
-import { Follow } from "$lib/server/models/Follow";
-import { Rating } from "$lib/server/models/Rating";
-import mongoose from "mongoose";
+import { databases, DATABASE_ID, COLLECTIONS } from '$lib/appwrite.js';
+import { Query } from 'appwrite';
 
 export const GET: RequestHandler = async ({ url }) => {
   try {
-    await connectToDatabase();
-
     const userId = url.searchParams.get("userId");
     const type = url.searchParams.get("type") || "following"; // 'following' or 'all'
     const limit = parseInt(url.searchParams.get("limit") || "20");
@@ -19,132 +14,180 @@ export const GET: RequestHandler = async ({ url }) => {
       return json({ error: "User ID is required" }, { status: 400 });
     }
 
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return json({ error: "Invalid user ID format" }, { status: 400 });
-    }
-
     let activities = [];
 
     if (type === "following") {
       // Get activities from users that the current user follows
-      const following = await Follow.find({ followerId: userId }).select(
-        "followingId",
+      const following = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTIONS.FOLLOWS,
+        [Query.equal('followerId', userId)]
       );
-      const followingIds = following.map((f) => f.followingId);
+      
+      const followingIds = following.documents.map((f: any) => f.followingId);
 
-      // Get recent activities from followed users
-      const [ratings, follows] = await Promise.all([
-        // Recent ratings
-        Rating.find({
-          userId: { $in: followingIds },
-          createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }, // Last 7 days
-        })
-          .populate("userId", "username displayName avatar")
-          .sort({ createdAt: -1 })
-          .limit(limit),
+      if (followingIds.length > 0) {
+        // Get recent activities from followed users
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        
+        const [ratings, follows] = await Promise.all([
+          // Recent ratings
+          databases.listDocuments(
+            DATABASE_ID,
+            COLLECTIONS.RATINGS,
+            [
+              Query.equal('userId', followingIds),
+              Query.greaterThanEqual('$createdAt', sevenDaysAgo),
+              Query.orderDesc('$createdAt'),
+              Query.limit(limit)
+            ]
+          ),
 
-        // Recent follows
-        Follow.find({
-          followerId: { $in: followingIds },
-          createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-        })
-          .populate("followerId", "username displayName avatar")
-          .populate("followingId", "username displayName avatar")
-          .sort({ createdAt: -1 })
-          .limit(limit),
-      ]);
+          // Recent follows
+          databases.listDocuments(
+            DATABASE_ID,
+            COLLECTIONS.FOLLOWS,
+            [
+              Query.equal('followerId', followingIds),
+              Query.greaterThanEqual('$createdAt', sevenDaysAgo),
+              Query.orderDesc('$createdAt'),
+              Query.limit(limit)
+            ]
+          )
+        ]);
 
-      // Transform and combine activities
-      activities = [
-        ...ratings.map((rating: any) => ({
-          id: rating._id?.toString() || "unknown",
-          type: "rating",
-          userId:
-            rating.userId?._id?.toString() ||
-            rating.userId?.toString() ||
-            "unknown",
-          actorName: rating.userId?.displayName || "Unknown User",
-          actorAvatar: rating.userId?.avatar,
-          mediaId: rating.mediaId,
-          mediaTitle: rating.mediaTitle,
-          mediaType: rating.mediaType,
-          rating: rating.rating,
-          review: rating.review,
-          createdAt: rating.createdAt,
-        })),
-        ...follows.map((follow: any) => ({
-          id: follow._id?.toString() || "unknown",
-          type: "follow",
-          userId:
-            follow.followerId?._id?.toString() ||
-            follow.followerId?.toString() ||
-            "unknown",
-          actorName: follow.followerId?.displayName || "Unknown User",
-          actorAvatar: follow.followerId?.avatar,
-          targetId:
-            follow.followingId?._id?.toString() ||
-            follow.followingId?.toString() ||
-            "unknown",
-          targetName: follow.followingId?.displayName || "Unknown User",
-          targetAvatar: follow.followingId?.avatar,
-          createdAt: follow.createdAt,
-        })),
-      ];
+        // Get user data for activities
+        const allUserIds = [
+          ...new Set([
+            ...ratings.documents.map((r: any) => r.userId),
+            ...follows.documents.map((f: any) => f.followerId),
+            ...follows.documents.map((f: any) => f.followingId)
+          ])
+        ];
+
+        const users = new Map();
+        for (const uid of allUserIds) {
+          try {
+            const user = await databases.getDocument(DATABASE_ID, COLLECTIONS.USERS, uid);
+            users.set(uid, user);
+          } catch (error) {
+            console.warn(`User ${uid} not found`);
+          }
+        }
+
+        // Transform and combine activities
+        activities = [
+          ...ratings.documents.map((rating: any) => {
+            const user = users.get(rating.userId);
+            return {
+              id: rating.$id,
+              type: "rating",
+              userId: rating.userId,
+              actorName: user?.displayName || "Unknown User",
+              actorAvatar: user?.avatar,
+              mediaId: rating.mediaId,
+              mediaTitle: rating.mediaTitle,
+              mediaType: rating.mediaType,
+              rating: rating.rating,
+              review: rating.review,
+              createdAt: rating.$createdAt,
+            };
+          }),
+          ...follows.documents.map((follow: any) => {
+            const follower = users.get(follow.followerId);
+            const following = users.get(follow.followingId);
+            return {
+              id: follow.$id,
+              type: "follow",
+              userId: follow.followerId,
+              actorName: follower?.displayName || "Unknown User",
+              actorAvatar: follower?.avatar,
+              targetId: follow.followingId,
+              targetName: following?.displayName || "Unknown User",
+              targetAvatar: following?.avatar,
+              createdAt: follow.$createdAt,
+            };
+          }),
+        ];
+      }
     } else {
       // Get all recent activities (public feed)
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      
       const [ratings, follows] = await Promise.all([
-        Rating.find({
-          createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }, // Last 24 hours
-        })
-          .populate("userId", "username displayName avatar")
-          .sort({ createdAt: -1 })
-          .limit(limit),
+        databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.RATINGS,
+          [
+            Query.greaterThanEqual('$createdAt', oneDayAgo),
+            Query.orderDesc('$createdAt'),
+            Query.limit(limit)
+          ]
+        ),
 
-        Follow.find({
-          createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-        })
-          .populate("followerId", "username displayName avatar")
-          .populate("followingId", "username displayName avatar")
-          .sort({ createdAt: -1 })
-          .limit(limit),
+        databases.listDocuments(
+          DATABASE_ID,
+          COLLECTIONS.FOLLOWS,
+          [
+            Query.greaterThanEqual('$createdAt', oneDayAgo),
+            Query.orderDesc('$createdAt'),
+            Query.limit(limit)
+          ]
+        )
       ]);
+
+      // Get user data for activities
+      const allUserIds = [
+        ...new Set([
+          ...ratings.documents.map((r: any) => r.userId),
+          ...follows.documents.map((f: any) => f.followerId),
+          ...follows.documents.map((f: any) => f.followingId)
+        ])
+      ];
+
+      const users = new Map();
+      for (const uid of allUserIds) {
+        try {
+          const user = await databases.getDocument(DATABASE_ID, COLLECTIONS.USERS, uid);
+          users.set(uid, user);
+        } catch (error) {
+          console.warn(`User ${uid} not found`);
+        }
+      }
 
       // Transform activities
       activities = [
-        ...ratings.map((rating: any) => ({
-          id: rating._id?.toString() || "unknown",
-          type: "rating",
-          userId:
-            rating.userId?._id?.toString() ||
-            rating.userId?.toString() ||
-            "unknown",
-          actorName: rating.userId?.displayName || "Unknown User",
-          actorAvatar: rating.userId?.avatar,
-          mediaId: rating.mediaId,
-          mediaTitle: rating.mediaTitle,
-          mediaType: rating.mediaType,
-          rating: rating.rating,
-          review: rating.review,
-          createdAt: rating.createdAt,
-        })),
-        ...follows.map((follow: any) => ({
-          id: follow._id?.toString() || "unknown",
-          type: "follow",
-          userId:
-            follow.followerId?._id?.toString() ||
-            follow.followerId?.toString() ||
-            "unknown",
-          actorName: follow.followerId?.displayName || "Unknown User",
-          actorAvatar: follow.followerId?.avatar,
-          targetId:
-            follow.followingId?._id?.toString() ||
-            follow.followingId?.toString() ||
-            "unknown",
-          targetName: follow.followingId?.displayName || "Unknown User",
-          targetAvatar: follow.followingId?.avatar,
-          createdAt: follow.createdAt,
-        })),
+        ...ratings.documents.map((rating: any) => {
+          const user = users.get(rating.userId);
+          return {
+            id: rating.$id,
+            type: "rating",
+            userId: rating.userId,
+            actorName: user?.displayName || "Unknown User",
+            actorAvatar: user?.avatar,
+            mediaId: rating.mediaId,
+            mediaTitle: rating.mediaTitle,
+            mediaType: rating.mediaType,
+            rating: rating.rating,
+            review: rating.review,
+            createdAt: rating.$createdAt,
+          };
+        }),
+        ...follows.documents.map((follow: any) => {
+          const follower = users.get(follow.followerId);
+          const following = users.get(follow.followingId);
+          return {
+            id: follow.$id,
+            type: "follow",
+            userId: follow.followerId,
+            actorName: follower?.displayName || "Unknown User",
+            actorAvatar: follower?.avatar,
+            targetId: follow.followingId,
+            targetName: following?.displayName || "Unknown User",
+            targetAvatar: following?.avatar,
+            createdAt: follow.$createdAt,
+          };
+        }),
       ];
     }
 
@@ -156,7 +199,7 @@ export const GET: RequestHandler = async ({ url }) => {
     const paginatedActivities = activities.slice(offset, offset + limit);
 
     return json({ activities: paginatedActivities });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching activities:", error);
     return json({ error: "Failed to fetch activities" }, { status: 500 });
   }

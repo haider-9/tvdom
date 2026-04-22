@@ -1,11 +1,5 @@
-import { connectToDatabase } from "$lib/server/database";
-import { User } from "$lib/server/models/User";
-import { Rating } from "$lib/server/models/Rating";
-import { WatchlistItem } from "$lib/server/models/WatchlistItem";
-import { WatchedItem } from "$lib/server/models/WatchedItem";
-import { PersonRating } from "$lib/server/models/PersonRating";
-import { PersonFavorite } from "$lib/server/models/PersonFavorite";
-import { Follow } from "$lib/server/models/Follow";
+import { databases, DATABASE_ID } from "$lib/appwrite";
+import { Query } from "appwrite";
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 
@@ -13,16 +7,18 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
   const { username } = params;
 
   try {
-    await connectToDatabase();
-
     // Find user by username
-    const user = await User.findOne({ username })
-      .select("-passwordHash -email") // Don't expose sensitive data
-      .lean();
+    const users = await databases.listDocuments(
+      DATABASE_ID,
+      'users',
+      [Query.equal('username', username)]
+    );
 
-    if (!user) {
+    if (users.documents.length === 0) {
       throw error(404, "User not found");
     }
+
+    const user = users.documents[0];
 
     // Get current user from session/user cookies
     let currentUserId = null;
@@ -41,7 +37,7 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
           sessionData.userId ||
           sessionData.id ||
           sessionData.user?.id ||
-          sessionData.user?._id;
+          sessionData.user?.$id;
         console.log("Found user from session cookie:", currentUserId);
       } catch (e) {
         console.warn("Invalid session cookie:", e);
@@ -52,7 +48,7 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
     if (!currentUserId && userCookie) {
       try {
         const userData = JSON.parse(userCookie);
-        currentUserId = userData.id || userData._id;
+        currentUserId = userData.id || userData.$id;
         console.log("Found user from user cookie:", currentUserId);
       } catch (e) {
         console.warn("Invalid user cookie:", e);
@@ -63,7 +59,7 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
     if (!currentUserId && tvdomUserCookie) {
       try {
         const userData = JSON.parse(tvdomUserCookie);
-        currentUserId = userData.id || userData._id;
+        currentUserId = userData.id || userData.$id;
         console.log("Found user from tvdom_user cookie:", currentUserId);
       } catch (e) {
         console.warn("Invalid tvdom_user cookie:", e);
@@ -78,7 +74,7 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
           sessionData.userId ||
           sessionData.id ||
           sessionData.user?.id ||
-          sessionData.user?._id;
+          sessionData.user?.$id;
         console.log("Found user from tvdom_session cookie:", currentUserId);
       } catch (e) {
         console.warn("Invalid tvdom_session cookie:", e);
@@ -92,9 +88,8 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
       return {
         user: {
           ...user,
-          _id: user._id.toString(),
-          joinedAt: user.joinedAt.toISOString(),
-          lastActiveAt: user.lastActiveAt.toISOString(),
+          joinedAt: user.$createdAt,
+          lastActiveAt: user.lastActiveAt || user.$updatedAt,
         },
         isPrivate: true,
         isFollowing: false,
@@ -108,29 +103,33 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 
     // Check if current user is following this user
     let isFollowing = false;
-    if (currentUserId && currentUserId !== user._id.toString()) {
+    if (currentUserId && currentUserId !== user.$id) {
       try {
         console.log(
-          `Checking follow relationship: follower=${currentUserId}, following=${user._id}`,
+          `Checking follow relationship: follower=${currentUserId}, following=${user.$id}`,
         );
 
-        const followRelation = await Follow.findOne({
-          followerId: currentUserId,
-          followingId: user._id,
-        });
+        const followRelations = await databases.listDocuments(
+          DATABASE_ID,
+          'follows',
+          [
+            Query.equal('followerId', currentUserId),
+            Query.equal('followingId', user.$id)
+          ]
+        );
 
-        isFollowing = !!followRelation;
+        isFollowing = followRelations.documents.length > 0;
         console.log(
-          `Follow check result: ${currentUserId} following ${user._id} = ${isFollowing}`,
-          followRelation
-            ? `(found relation: ${followRelation._id})`
+          `Follow check result: ${currentUserId} following ${user.$id} = ${isFollowing}`,
+          followRelations.documents.length > 0
+            ? `(found relation: ${followRelations.documents[0].$id})`
             : "(no relation found)",
         );
       } catch (error) {
         console.error("Error checking follow status:", error);
         isFollowing = false;
       }
-    } else if (currentUserId === user._id.toString()) {
+    } else if (currentUserId === user.$id) {
       console.log("User viewing own profile, setting isFollowing to false");
       isFollowing = false;
     } else {
@@ -141,30 +140,35 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
     // Get user's activity data
     const [ratings, watchlist, watched, personRatings, personFavorites] =
       await Promise.all([
-        Rating.find({ userId: user._id })
-          .sort({ createdAt: -1 })
-          .limit(10)
-          .lean(),
-        WatchlistItem.find({ userId: user._id })
-          .sort({ addedAt: -1 })
-          .limit(10)
-          .lean(),
-        WatchedItem.find({ userId: user._id })
-          .sort({ watchedAt: -1 })
-          .limit(10)
-          .lean(),
-        PersonRating.find({ userId: user._id })
-          .sort({ createdAt: -1 })
-          .limit(10)
-          .lean(),
-        PersonFavorite.find({ userId: user._id })
-          .sort({ addedAt: -1 })
-          .limit(10)
-          .lean(),
+        databases.listDocuments(DATABASE_ID, 'ratings', [
+          Query.equal('userId', user.$id),
+          Query.orderDesc('$createdAt'),
+          Query.limit(10)
+        ]),
+        databases.listDocuments(DATABASE_ID, 'watchlist', [
+          Query.equal('userId', user.$id),
+          Query.orderDesc('addedAt'),
+          Query.limit(10)
+        ]),
+        databases.listDocuments(DATABASE_ID, 'watched', [
+          Query.equal('userId', user.$id),
+          Query.orderDesc('watchedAt'),
+          Query.limit(10)
+        ]),
+        databases.listDocuments(DATABASE_ID, 'person_ratings', [
+          Query.equal('userId', user.$id),
+          Query.orderDesc('$createdAt'),
+          Query.limit(10)
+        ]),
+        databases.listDocuments(DATABASE_ID, 'person_favorites', [
+          Query.equal('userId', user.$id),
+          Query.orderDesc('addedAt'),
+          Query.limit(10)
+        ]),
       ]);
 
     console.log("Returning user data:", {
-      userId: user._id.toString(),
+      userId: user.$id,
       currentUserId,
       isFollowing,
       isPrivate: false,
@@ -173,45 +177,33 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
     return {
       user: {
         ...user,
-        _id: user._id.toString(),
-        joinedAt: user.joinedAt.toISOString(),
-        lastActiveAt: user.lastActiveAt.toISOString(),
+        joinedAt: user.$createdAt,
+        lastActiveAt: user.lastActiveAt || user.$updatedAt,
       },
       isPrivate: false,
       isFollowing,
       currentUserId, // Add this for debugging
-      ratings: ratings.map((rating) => ({
+      ratings: ratings.documents.map((rating) => ({
         ...rating,
-        _id: rating._id.toString(),
-        userId: rating.userId.toString(),
-        createdAt: rating.createdAt.toISOString(),
-        updatedAt: rating.updatedAt.toISOString(),
+        createdAt: rating.$createdAt,
+        updatedAt: rating.$updatedAt,
       })),
-      watchlist: watchlist.map((item) => ({
+      watchlist: watchlist.documents.map((item) => ({
         ...item,
-        _id: item._id.toString(),
-        userId: item.userId.toString(),
-        addedAt: item.addedAt.toISOString(),
+        addedAt: item.addedAt || item.$createdAt,
       })),
-      watched: watched.map((item) => ({
+      watched: watched.documents.map((item) => ({
         ...item,
-        _id: item._id.toString(),
-        userId: item.userId.toString(),
-        watchedAt: item.watchedAt.toISOString(),
-        lastRewatchedAt: item.lastRewatchedAt?.toISOString(),
+        watchedAt: item.watchedAt || item.$createdAt,
       })),
-      personRatings: personRatings.map((rating) => ({
+      personRatings: personRatings.documents.map((rating) => ({
         ...rating,
-        _id: rating._id.toString(),
-        userId: rating.userId.toString(),
-        createdAt: rating.createdAt.toISOString(),
-        updatedAt: rating.updatedAt.toISOString(),
+        createdAt: rating.$createdAt,
+        updatedAt: rating.$updatedAt,
       })),
-      personFavorites: personFavorites.map((fav) => ({
+      personFavorites: personFavorites.documents.map((fav) => ({
         ...fav,
-        _id: fav._id.toString(),
-        userId: fav.userId.toString(),
-        addedAt: fav.addedAt.toISOString(),
+        addedAt: fav.addedAt || fav.$createdAt,
       })),
     };
   } catch (err) {

@@ -16,7 +16,7 @@
 	import { Badge } from "$lib/components/ui/badge";
 	import { Button } from "$lib/components/ui/button";
 	import { toast } from "$lib/components/ui/toast";
-	import { userStore } from "$lib/stores/user.svelte.js";
+	import { userStore } from "$lib/stores/user.svelte";
 	import MediaCard from "$lib/components/MediaCard.svelte";
 	import type { PageData } from "./$types";
 

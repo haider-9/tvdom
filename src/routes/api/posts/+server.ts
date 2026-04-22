@@ -1,84 +1,74 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import clientPromise from '$lib/server/mongodb';
-import { ObjectId } from 'mongodb';
+import { databases, DATABASE_ID } from '$lib/appwrite';
+import { ID, Query } from 'appwrite';
 
 export const GET: RequestHandler = async ({ url }) => {
 	try {
-		const client = await clientPromise;
-		const db = client.db('tvdom');
-		const postsCollection = db.collection('posts');
-
 		const userId = url.searchParams.get('userId');
 		const postId = url.searchParams.get('postId');
 		const page = parseInt(url.searchParams.get('page') || '1');
 		const limit = parseInt(url.searchParams.get('limit') || '20');
-		const skip = (page - 1) * limit;
+		const offset = (page - 1) * limit;
 
 		// Get single post
 		if (postId) {
-			const post = await postsCollection.findOne({ _id: new ObjectId(postId) });
-			if (!post) {
+			try {
+				const post = await databases.getDocument(DATABASE_ID, 'posts', postId);
+				
+				// Get user data
+				let user = null;
+				try {
+					user = await databases.getDocument(DATABASE_ID, 'users', post.userId);
+				} catch (error) {
+					// User not found, continue without user data
+				}
+
+				return json({
+					post: {
+						...post,
+						user: user ? {
+							$id: user.$id,
+							username: user.username,
+							displayName: user.displayName,
+							avatar: user.avatar,
+							isVerified: user.isVerified
+						} : null
+					}
+				});
+			} catch (error) {
 				return json({ error: 'Post not found' }, { status: 404 });
 			}
-
-			// Populate user data
-			const usersCollection = db.collection('users');
-			const user = await usersCollection.findOne({ _id: new ObjectId(post.userId) });
-
-			return json({
-				post: {
-					...post,
-					user: user ? {
-						_id: user._id,
-						username: user.username,
-						displayName: user.displayName,
-						avatar: user.avatar,
-						isVerified: user.isVerified
-					} : null
-				}
-			});
 		}
+
+		// Build queries
+		const queries = [
+			Query.orderDesc('$createdAt'),
+			Query.limit(limit),
+			Query.offset(offset)
+		];
 
 		// Get user's posts
 		if (userId) {
-			const posts = await postsCollection
-				.find({ userId })
-				.sort({ createdAt: -1 })
-				.skip(skip)
-				.limit(limit)
-				.toArray();
-
-			const total = await postsCollection.countDocuments({ userId });
-
-			return json({
-				posts,
-				pagination: {
-					page,
-					limit,
-					total,
-					totalPages: Math.ceil(total / limit)
-				}
-			});
+			queries.unshift(Query.equal('userId', userId));
 		}
 
-		// Get all posts (feed)
-		const posts = await postsCollection
-			.find({})
-			.sort({ createdAt: -1 })
-			.skip(skip)
-			.limit(limit)
-			.toArray();
+		const posts = await databases.listDocuments(DATABASE_ID, 'posts', queries);
 
-		// Populate user data for each post
-		const usersCollection = db.collection('users');
+		// Get user data for each post
 		const postsWithUsers = await Promise.all(
-			posts.map(async (post) => {
-				const user = await usersCollection.findOne({ _id: new ObjectId(post.userId) });
+			posts.documents.map(async (post) => {
+				let user = null;
+				try {
+					user = await databases.getDocument(DATABASE_ID, 'users', post.userId);
+				} catch (error) {
+					// User not found, continue without user data
+				}
+				
 				return {
 					...post,
 					user: user ? {
-						_id: user._id,
+						$id: user.$id,
 						username: user.username,
 						displayName: user.displayName,
 						avatar: user.avatar,
@@ -88,15 +78,13 @@ export const GET: RequestHandler = async ({ url }) => {
 			})
 		);
 
-		const total = await postsCollection.countDocuments({});
-
 		return json({
 			posts: postsWithUsers,
 			pagination: {
 				page,
 				limit,
-				total,
-				totalPages: Math.ceil(total / limit)
+				total: posts.total,
+				totalPages: Math.ceil(posts.total / limit)
 			}
 		});
 	} catch (error) {
@@ -107,10 +95,6 @@ export const GET: RequestHandler = async ({ url }) => {
 
 export const POST: RequestHandler = async ({ request }) => {
 	try {
-		const client = await clientPromise;
-		const db = client.db('tvdom');
-		const postsCollection = db.collection('posts');
-
 		const data = await request.json();
 		const { userId, content, mediaId, mediaType, mediaTitle, mediaPoster, spoiler, images } = data;
 
@@ -118,29 +102,27 @@ export const POST: RequestHandler = async ({ request }) => {
 			return json({ error: 'Missing required fields' }, { status: 400 });
 		}
 
-		const newPost = {
-			userId,
-			content: content || '',
-			images: images || [],
-			mediaId: mediaId || null,
-			mediaType: mediaType || null,
-			mediaTitle: mediaTitle || null,
-			mediaPoster: mediaPoster || null,
-			spoiler: spoiler || false,
-			likes: [],
-			commentCount: 0,
-			createdAt: new Date(),
-			updatedAt: new Date()
-		};
-
-		const result = await postsCollection.insertOne(newPost);
+		const newPost = await databases.createDocument(
+			DATABASE_ID,
+			'posts',
+			ID.unique(),
+			{
+				userId,
+				content: content || '',
+				images: JSON.stringify(images || []),
+				mediaId: mediaId || '',
+				mediaType: mediaType || '',
+				mediaTitle: mediaTitle || '',
+				mediaPoster: mediaPoster || '',
+				spoiler: spoiler || false,
+				likes: JSON.stringify([]),
+				commentCount: 0
+			}
+		);
 
 		return json({
 			success: true,
-			post: {
-				_id: result.insertedId,
-				...newPost
-			}
+			post: newPost
 		});
 	} catch (error) {
 		console.error('Error creating post:', error);
@@ -150,10 +132,6 @@ export const POST: RequestHandler = async ({ request }) => {
 
 export const PUT: RequestHandler = async ({ request }) => {
 	try {
-		const client = await clientPromise;
-		const db = client.db('tvdom');
-		const postsCollection = db.collection('posts');
-
 		const data = await request.json();
 		const { postId, userId, action } = data;
 
@@ -163,29 +141,36 @@ export const PUT: RequestHandler = async ({ request }) => {
 
 		// Like/Unlike post
 		if (action === 'like') {
-			const post = await postsCollection.findOne({ _id: new ObjectId(postId) });
-			if (!post) {
+			try {
+				const post = await databases.getDocument(DATABASE_ID, 'posts', postId);
+				
+				const likes = JSON.parse(post.likes || '[]');
+				const isLiked = likes.includes(userId);
+
+				if (isLiked) {
+					// Unlike
+					const updatedLikes = likes.filter((id: string) => id !== userId);
+					await databases.updateDocument(
+						DATABASE_ID,
+						'posts',
+						postId,
+						{ likes: JSON.stringify(updatedLikes) }
+					);
+				} else {
+					// Like
+					likes.push(userId);
+					await databases.updateDocument(
+						DATABASE_ID,
+						'posts',
+						postId,
+						{ likes: JSON.stringify(likes) }
+					);
+				}
+
+				return json({ success: true, liked: !isLiked });
+			} catch (error) {
 				return json({ error: 'Post not found' }, { status: 404 });
 			}
-
-			const likes = post.likes || [];
-			const isLiked = likes.includes(userId);
-
-			if (isLiked) {
-				// Unlike
-				await postsCollection.updateOne(
-					{ _id: new ObjectId(postId) },
-					{ $pull: { likes: userId } }
-				);
-			} else {
-				// Like
-				await postsCollection.updateOne(
-					{ _id: new ObjectId(postId) },
-					{ $addToSet: { likes: userId } }
-				);
-			}
-
-			return json({ success: true, liked: !isLiked });
 		}
 
 		// Update post content
@@ -195,12 +180,18 @@ export const PUT: RequestHandler = async ({ request }) => {
 				return json({ error: 'Content is required' }, { status: 400 });
 			}
 
-			await postsCollection.updateOne(
-				{ _id: new ObjectId(postId), userId },
-				{ $set: { content, updatedAt: new Date() } }
-			);
+			try {
+				await databases.updateDocument(
+					DATABASE_ID,
+					'posts',
+					postId,
+					{ content }
+				);
 
-			return json({ success: true });
+				return json({ success: true });
+			} catch (error) {
+				return json({ error: 'Post not found or unauthorized' }, { status: 404 });
+			}
 		}
 
 		return json({ error: 'Invalid action' }, { status: 400 });
@@ -212,11 +203,6 @@ export const PUT: RequestHandler = async ({ request }) => {
 
 export const DELETE: RequestHandler = async ({ url }) => {
 	try {
-		const client = await clientPromise;
-		const db = client.db('tvdom');
-		const postsCollection = db.collection('posts');
-		const commentsCollection = db.collection('comments');
-
 		const postId = url.searchParams.get('postId');
 		const userId = url.searchParams.get('userId');
 
@@ -224,21 +210,32 @@ export const DELETE: RequestHandler = async ({ url }) => {
 			return json({ error: 'Missing required fields' }, { status: 400 });
 		}
 
-		// Verify ownership
-		const post = await postsCollection.findOne({ _id: new ObjectId(postId) });
-		if (!post) {
+		try {
+			// Verify ownership
+			const post = await databases.getDocument(DATABASE_ID, 'posts', postId);
+			
+			if (post.userId !== userId) {
+				return json({ error: 'Unauthorized' }, { status: 403 });
+			}
+
+			// Delete post
+			await databases.deleteDocument(DATABASE_ID, 'posts', postId);
+
+			// Delete associated comments
+			const comments = await databases.listDocuments(
+				DATABASE_ID,
+				'comments',
+				[Query.equal('postId', postId)]
+			);
+
+			for (const comment of comments.documents) {
+				await databases.deleteDocument(DATABASE_ID, 'comments', comment.$id);
+			}
+
+			return json({ success: true });
+		} catch (error) {
 			return json({ error: 'Post not found' }, { status: 404 });
 		}
-
-		if (post.userId !== userId) {
-			return json({ error: 'Unauthorized' }, { status: 403 });
-		}
-
-		// Delete post and its comments
-		await postsCollection.deleteOne({ _id: new ObjectId(postId) });
-		await commentsCollection.deleteMany({ postId });
-
-		return json({ success: true });
 	} catch (error) {
 		console.error('Error deleting post:', error);
 		return json({ error: 'Failed to delete post' }, { status: 500 });

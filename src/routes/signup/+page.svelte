@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { userStore } from "$lib/stores/user.svelte.js";
+  import { userStore } from "$lib/stores/user.svelte";
   import { Eye, EyeOff, Mail, Lock, User, Check, ArrowLeft, UserPlus } from "lucide-svelte";
   import { goto } from "$app/navigation";
   import { toast } from "$lib/components/ui/toast/index.js";

@@ -83,10 +83,20 @@ class NotificationStore {
   }
 
   private startPolling() {
+    // Only start polling if we have a valid user ID
+    const userId = this.getCurrentUserId();
+    if (!userId) {
+      console.log("No user ID available, skipping notification polling");
+      return;
+    }
+
     // Poll for new notifications every 30 seconds
     this.#pollInterval = setInterval(() => {
-      this.fetchNotifications(false);
-      this.fetchRecentActivities();
+      const currentUserId = this.getCurrentUserId();
+      if (currentUserId) {
+        this.fetchNotifications(false);
+        this.fetchRecentActivities();
+      }
     }, 30000);
 
     // Initial fetch

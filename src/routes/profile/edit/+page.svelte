@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { userStore } from "$lib/stores/user.svelte.js";
+  import { userStore } from "$lib/stores/user.svelte";
   import { goto } from "$app/navigation";
   import {
     User,
@@ -77,34 +77,47 @@
     isLoading = true;
 
     try {
-      // Create promises for uploads
-      const uploadPromises = [];
+      // Upload images first and get URLs
+      let avatarUrl: string | null = null;
+      let bannerUrl: string | null = null;
 
+      // Upload banner if selected
       if (bannerInput.files?.[0]) {
-        uploadPromises.push(
-          toast.promise(userStore.uploadBanner(bannerInput.files[0]), {
-            loading: "Uploading banner...",
-            success: "Banner uploaded successfully!",
-            error: "Failed to upload banner",
-          })
-        );
+        try {
+          bannerUrl = await userStore.uploadBanner(bannerInput.files[0]);
+          console.log('Banner upload result:', bannerUrl, typeof bannerUrl);
+          toast.success("Banner uploaded successfully!");
+        } catch (error) {
+          toast.error("Failed to upload banner");
+          throw error;
+        }
       }
 
+      // Upload avatar if selected
       if (avatarInput.files?.[0]) {
-        uploadPromises.push(
-          toast.promise(userStore.uploadAvatar(avatarInput.files[0]), {
-            loading: "Uploading avatar...",
-            success: "Avatar uploaded successfully!",
-            error: "Failed to upload avatar",
-          })
-        );
+        try {
+          avatarUrl = await userStore.uploadAvatar(avatarInput.files[0]);
+          console.log('Avatar upload result:', avatarUrl, typeof avatarUrl);
+          toast.success("Avatar uploaded successfully!");
+        } catch (error) {
+          toast.error("Failed to upload avatar");
+          throw error;
+        }
       }
 
-      // Wait for uploads to complete
-      await Promise.all(uploadPromises);
+      // Prepare update data with image URLs
+      const updateData = {
+        ...formData,
+        ...(avatarUrl && { avatar: String(avatarUrl) }), // Ensure string
+        ...(bannerUrl && { banner: String(bannerUrl) }), // Ensure string
+      };
 
-      // Update profile
-      await toast.promise(userStore.updateProfile(formData), {
+      console.log('Final update data:', updateData); // Debug log
+      console.log('Avatar URL type:', typeof avatarUrl, avatarUrl); // Debug log
+      console.log('Banner URL type:', typeof bannerUrl, bannerUrl); // Debug log
+
+      // Update profile with complete data including image URLs
+      await toast.promise(userStore.updateProfile(updateData), {
         loading: "Updating profile...",
         success: "Profile updated successfully!",
         error: "Failed to update profile",

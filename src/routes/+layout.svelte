@@ -11,7 +11,7 @@
     import LoginModal from "$lib/components/auth/LoginModal.svelte";
     import RegisterModal from "$lib/components/auth/RegisterModal.svelte";
     import UserProfile from "$lib/components/user/UserProfile.svelte";
-    import { userStore } from "$lib/stores/user.svelte.js";
+    import { userStore } from "$lib/stores/user.svelte";
 
     // Initialize theme store - this ensures it's loaded on every page
     import { themeStore } from "$lib/stores/theme.svelte.js";

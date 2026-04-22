@@ -1,54 +1,92 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { connectToDatabase } from '$lib/server/database';
-import { CurrentlyWatching } from '$lib/server/models/CurrentlyWatching';
-import { User } from '$lib/server/models/User';
+import { databases, DATABASE_ID, COLLECTIONS, ID } from '$lib/appwrite.js';
+import { Query } from 'appwrite';
 
 // Get currently watching items
 export const GET: RequestHandler = async ({ url }) => {
 	try {
-		await connectToDatabase();
-
 		const userId = url.searchParams.get('userId');
 		const following = url.searchParams.get('following') === 'true';
 
 		// Clean up old entries (older than 6 hours)
-		const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
-		await CurrentlyWatching.deleteMany({ lastActiveAt: { $lt: sixHoursAgo } });
+		const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+		
+		try {
+			const oldEntries = await databases.listDocuments(
+				DATABASE_ID,
+				COLLECTIONS.CURRENTLY_WATCHING,
+				[Query.lessThan('lastWatchedAt', sixHoursAgo)]
+			);
 
-		let query: any = {};
+			// Delete old entries
+			for (const entry of oldEntries.documents) {
+				await databases.deleteDocument(
+					DATABASE_ID,
+					COLLECTIONS.CURRENTLY_WATCHING,
+					entry.$id
+				);
+			}
+		} catch (cleanupError) {
+			console.error('Error cleaning up old entries:', cleanupError);
+		}
+
+		let queries = [Query.orderDesc('lastWatchedAt'), Query.limit(50)];
 
 		if (userId && following) {
 			// Get user's following list
-			const user = await User.findOne({ username: userId });
-			if (user && user.following) {
-				const followingIds = user.following.map((f: any) => f.toString());
-				query = { userId: { $in: followingIds } };
+			try {
+				const userFollows = await databases.listDocuments(
+					DATABASE_ID,
+					COLLECTIONS.FOLLOWS,
+					[Query.equal('followerId', userId)]
+				);
+				
+				const followingIds = userFollows.documents.map((f: any) => f.followingId);
+				if (followingIds.length > 0) {
+					queries.unshift(Query.equal('userId', followingIds));
+				} else {
+					// No following, return empty
+					return json({ currentlyWatching: [] });
+				}
+			} catch (followError) {
+				console.error('Error fetching follows:', followError);
+				return json({ currentlyWatching: [] });
 			}
 		} else if (userId) {
-			query = { userId };
+			queries.unshift(Query.equal('userId', userId));
 		}
 
-		const currentlyWatching = await CurrentlyWatching.find(query)
-			.sort({ lastActiveAt: -1 })
-			.limit(50)
-			.lean();
-
-		// Populate user data
-		const userIds = [...new Set(currentlyWatching.map((item) => item.userId))];
-		const users = await User.find({ _id: { $in: userIds } }).select(
-			'username displayName avatar isVerified'
+		const currentlyWatching = await databases.listDocuments(
+			DATABASE_ID,
+			COLLECTIONS.CURRENTLY_WATCHING,
+			queries
 		);
 
-		const usersMap = new Map(users.map((u) => [u._id.toString(), u]));
+		// Get user data for each entry
+		const userIds = [...new Set(currentlyWatching.documents.map((item: any) => item.userId))];
+		const enrichedData = [];
 
-		const enrichedData = currentlyWatching.map((item) => ({
-			...item,
-			user: usersMap.get(item.userId)
-		}));
+		for (const item of currentlyWatching.documents) {
+			try {
+				const user = await databases.getDocument(DATABASE_ID, COLLECTIONS.USERS, item.userId);
+				enrichedData.push({
+					...item,
+					user: {
+						username: user.username,
+						displayName: user.displayName,
+						avatar: user.avatar,
+						isVerified: user.isVerified
+					}
+				});
+			} catch (userError) {
+				// If user not found, skip this entry
+				console.error('User not found for currently watching entry:', userError);
+			}
+		}
 
 		return json({ currentlyWatching: enrichedData });
-	} catch (error) {
+	} catch (error: any) {
 		console.error('Error fetching currently watching:', error);
 		return json({ error: 'Failed to fetch currently watching' }, { status: 500 });
 	}
@@ -57,8 +95,6 @@ export const GET: RequestHandler = async ({ url }) => {
 // Update currently watching
 export const POST: RequestHandler = async ({ request }) => {
 	try {
-		await connectToDatabase();
-
 		const data = await request.json();
 		const { userId, mediaId, mediaType, mediaTitle, mediaPoster, season, episode } = data;
 
@@ -66,25 +102,58 @@ export const POST: RequestHandler = async ({ request }) => {
 			return json({ error: 'Missing required fields' }, { status: 400 });
 		}
 
-		// Update or create currently watching entry
-		const currentlyWatching = await CurrentlyWatching.findOneAndUpdate(
-			{ userId, mediaId },
-			{
-				userId,
-				mediaId,
-				mediaType,
-				mediaTitle,
-				mediaPoster,
-				season,
-				episode,
-				lastActiveAt: new Date(),
-				$setOnInsert: { startedAt: new Date() }
-			},
-			{ upsert: true, new: true }
+		// Check if entry already exists
+		const existingEntries = await databases.listDocuments(
+			DATABASE_ID,
+			COLLECTIONS.CURRENTLY_WATCHING,
+			[
+				Query.equal('userId', userId),
+				Query.equal('mediaId', mediaId),
+				Query.limit(1)
+			]
 		);
 
+		let currentlyWatching;
+
+		if (existingEntries.documents.length > 0) {
+			// Update existing entry
+			currentlyWatching = await databases.updateDocument(
+				DATABASE_ID,
+				COLLECTIONS.CURRENTLY_WATCHING,
+				existingEntries.documents[0].$id,
+				{
+					mediaType,
+					mediaTitle,
+					mediaPoster: mediaPoster || '',
+					season: season || 0,
+					episode: episode || 0,
+					lastWatchedAt: new Date().toISOString()
+				}
+			);
+		} else {
+			// Create new entry
+			currentlyWatching = await databases.createDocument(
+				DATABASE_ID,
+				COLLECTIONS.CURRENTLY_WATCHING,
+				ID.unique(),
+				{
+					userId,
+					mediaId,
+					mediaType,
+					mediaTitle,
+					mediaPoster: mediaPoster || '',
+					season: season || 0,
+					episode: episode || 0,
+					startedAt: new Date().toISOString(),
+					lastWatchedAt: new Date().toISOString(),
+					progress: 0,
+					totalDuration: 0
+				}
+			);
+		}
+
 		return json({ success: true, item: currentlyWatching });
-	} catch (error) {
+	} catch (error: any) {
 		console.error('Error updating currently watching:', error);
 		return json({ error: 'Failed to update currently watching' }, { status: 500 });
 	}
@@ -93,8 +162,6 @@ export const POST: RequestHandler = async ({ request }) => {
 // Stop watching
 export const DELETE: RequestHandler = async ({ url }) => {
 	try {
-		await connectToDatabase();
-
 		const userId = url.searchParams.get('userId');
 		const mediaId = url.searchParams.get('mediaId');
 
@@ -102,10 +169,27 @@ export const DELETE: RequestHandler = async ({ url }) => {
 			return json({ error: 'Missing required fields' }, { status: 400 });
 		}
 
-		await CurrentlyWatching.findOneAndDelete({ userId, mediaId });
+		// Find and delete the entry
+		const existingEntries = await databases.listDocuments(
+			DATABASE_ID,
+			COLLECTIONS.CURRENTLY_WATCHING,
+			[
+				Query.equal('userId', userId),
+				Query.equal('mediaId', mediaId),
+				Query.limit(1)
+			]
+		);
+
+		if (existingEntries.documents.length > 0) {
+			await databases.deleteDocument(
+				DATABASE_ID,
+				COLLECTIONS.CURRENTLY_WATCHING,
+				existingEntries.documents[0].$id
+			);
+		}
 
 		return json({ success: true });
-	} catch (error) {
+	} catch (error: any) {
 		console.error('Error deleting currently watching:', error);
 		return json({ error: 'Failed to delete currently watching' }, { status: 500 });
 	}

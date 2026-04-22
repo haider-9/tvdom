@@ -20,6 +20,7 @@
 		"@tailwindcss/postcss": "^4.1.17",
 		"@tailwindcss/typography": "^0.5.19",
 		"autoprefixer": "^10.4.22",
+		"baseline-browser-mapping": "^2.10.21",
 		"bits-ui": "^2.14.4",
 		"postcss": "^8.5.6",
 		"svelte": "^5.43.8",
@@ -33,11 +34,10 @@
 	"dependencies": {
 		"@iconify/svelte": "^5.1.0",
 		"@tailwindcss/vite": "^4.1.17",
+		"appwrite": "^24.2.0",
 		"clsx": "^2.1.1",
 		"date-fns": "^4.1.0",
 		"lucide-svelte": "^0.555.0",
-		"mongodb": "^7.0.0",
-		"mongoose": "^9.0.2",
 		"motion": "^12.23.24",
 		"svelte-sonner": "^1.0.7",
 		"tailwind-merge": "^3.4.0"

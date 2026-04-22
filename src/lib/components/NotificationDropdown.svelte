@@ -12,7 +12,7 @@
         Clock,
     } from "lucide-svelte";
     import { notificationStore } from "$lib/stores/notification.svelte.js";
-    import { userStore } from "$lib/stores/user.svelte.js";
+    import { userStore } from "$lib/stores/user.svelte";
     import { onMount } from "svelte";
     // Simple time formatting function
     function formatDistanceToNow(

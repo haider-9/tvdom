@@ -1,34 +1,39 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import clientPromise from '$lib/server/mongodb';
-import { ObjectId } from 'mongodb';
+import { databases, DATABASE_ID } from '$lib/appwrite';
+import { ID, Query } from 'appwrite';
 
 export const GET: RequestHandler = async ({ url }) => {
 	try {
-		const client = await clientPromise;
-		const db = client.db('tvdom');
-		const commentsCollection = db.collection('comments');
-
 		const postId = url.searchParams.get('postId');
 
 		if (!postId) {
 			return json({ error: 'Post ID is required' }, { status: 400 });
 		}
 
-		const comments = await commentsCollection
-			.find({ postId })
-			.sort({ createdAt: -1 })
-			.toArray();
+		const comments = await databases.listDocuments(
+			DATABASE_ID,
+			'comments',
+			[
+				Query.equal('postId', postId),
+				Query.orderDesc('$createdAt')
+			]
+		);
 
-		// Populate user data
-		const usersCollection = db.collection('users');
+		// Get user data for each comment
 		const commentsWithUsers = await Promise.all(
-			comments.map(async (comment) => {
-				const user = await usersCollection.findOne({ _id: new ObjectId(comment.userId) });
+			comments.documents.map(async (comment) => {
+				let user = null;
+				try {
+					user = await databases.getDocument(DATABASE_ID, 'users', comment.userId);
+				} catch (error) {
+					// User not found, continue without user data
+				}
+				
 				return {
 					...comment,
 					user: user ? {
-						_id: user._id,
+						$id: user.$id,
 						username: user.username,
 						displayName: user.displayName,
 						avatar: user.avatar,
@@ -47,11 +52,6 @@ export const GET: RequestHandler = async ({ url }) => {
 
 export const POST: RequestHandler = async ({ request }) => {
 	try {
-		const client = await clientPromise;
-		const db = client.db('tvdom');
-		const commentsCollection = db.collection('comments');
-		const postsCollection = db.collection('posts');
-
 		const data = await request.json();
 		const { postId, userId, content } = data;
 
@@ -59,29 +59,35 @@ export const POST: RequestHandler = async ({ request }) => {
 			return json({ error: 'Missing required fields' }, { status: 400 });
 		}
 
-		const newComment = {
-			postId,
-			userId,
-			content,
-			likes: [],
-			createdAt: new Date(),
-			updatedAt: new Date()
-		};
-
-		const result = await commentsCollection.insertOne(newComment);
+		const newComment = await databases.createDocument(
+			DATABASE_ID,
+			'comments',
+			ID.unique(),
+			{
+				postId,
+				userId,
+				content,
+				likes: JSON.stringify([])
+			}
+		);
 
 		// Increment comment count on post
-		await postsCollection.updateOne(
-			{ _id: new ObjectId(postId) },
-			{ $inc: { commentCount: 1 } }
-		);
+		try {
+			const post = await databases.getDocument(DATABASE_ID, 'posts', postId);
+			await databases.updateDocument(
+				DATABASE_ID,
+				'posts',
+				postId,
+				{ commentCount: (post.commentCount || 0) + 1 }
+			);
+		} catch (error) {
+			// Post might not exist, but comment was created successfully
+			console.warn('Could not update post comment count:', error);
+		}
 
 		return json({
 			success: true,
-			comment: {
-				_id: result.insertedId,
-				...newComment
-			}
+			comment: newComment
 		});
 	} catch (error) {
 		console.error('Error creating comment:', error);
@@ -91,11 +97,6 @@ export const POST: RequestHandler = async ({ request }) => {
 
 export const DELETE: RequestHandler = async ({ url }) => {
 	try {
-		const client = await clientPromise;
-		const db = client.db('tvdom');
-		const commentsCollection = db.collection('comments');
-		const postsCollection = db.collection('posts');
-
 		const commentId = url.searchParams.get('commentId');
 		const userId = url.searchParams.get('userId');
 
@@ -103,24 +104,33 @@ export const DELETE: RequestHandler = async ({ url }) => {
 			return json({ error: 'Missing required fields' }, { status: 400 });
 		}
 
-		const comment = await commentsCollection.findOne({ _id: new ObjectId(commentId) });
-		if (!comment) {
+		try {
+			const comment = await databases.getDocument(DATABASE_ID, 'comments', commentId);
+			
+			if (comment.userId !== userId) {
+				return json({ error: 'Unauthorized' }, { status: 403 });
+			}
+
+			await databases.deleteDocument(DATABASE_ID, 'comments', commentId);
+
+			// Decrement comment count on post
+			try {
+				const post = await databases.getDocument(DATABASE_ID, 'posts', comment.postId);
+				await databases.updateDocument(
+					DATABASE_ID,
+					'posts',
+					comment.postId,
+					{ commentCount: Math.max((post.commentCount || 1) - 1, 0) }
+				);
+			} catch (error) {
+				// Post might not exist, but comment was deleted successfully
+				console.warn('Could not update post comment count:', error);
+			}
+
+			return json({ success: true });
+		} catch (error) {
 			return json({ error: 'Comment not found' }, { status: 404 });
 		}
-
-		if (comment.userId !== userId) {
-			return json({ error: 'Unauthorized' }, { status: 403 });
-		}
-
-		await commentsCollection.deleteOne({ _id: new ObjectId(commentId) });
-
-		// Decrement comment count on post
-		await postsCollection.updateOne(
-			{ _id: new ObjectId(comment.postId) },
-			{ $inc: { commentCount: -1 } }
-		);
-
-		return json({ success: true });
 	} catch (error) {
 		console.error('Error deleting comment:', error);
 		return json({ error: 'Failed to delete comment' }, { status: 500 });
