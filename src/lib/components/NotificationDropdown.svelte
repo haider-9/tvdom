@@ -15,11 +15,14 @@
     import { onMount } from "svelte";
     // Simple time formatting function
     function formatDistanceToNow(
-        date: Date,
+        date: Date | string | null | undefined,
         options?: { addSuffix?: boolean },
     ): string {
+        if (!date) return '';
+        const d = date instanceof Date ? date : new Date(date);
+        if (isNaN(d.getTime())) return '';
         const now = new Date();
-        const diffInMs = now.getTime() - date.getTime();
+        const diffInMs = now.getTime() - d.getTime();
         const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
         const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
         const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
@@ -53,6 +56,8 @@
         if (showDropdown) {
             // Fetch latest notifications when opening
             notificationStore.fetchNotifications();
+            // Mark all visible virtual notifications as seen
+            setTimeout(() => notificationStore.markAllAsRead(), 1500);
         }
     }
 

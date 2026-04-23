@@ -21,7 +21,7 @@ export interface Notification {
   $createdAt: Date;
   id: string;
   userId: string;
-  type: "follow" | "unfollow" | "rating" | "review" | "system" | "api_change";
+  type: 'follow' | 'unfollow' | 'rating' | 'review' | 'system' | 'api_change' | 'new_release' | 'upcoming' | 'trending' | 'activity';
   title: string;
   message: string;
   data?: {
@@ -30,12 +30,14 @@ export interface Notification {
     actorAvatar?: string;
     mediaId?: string;
     mediaTitle?: string;
-    mediaType?: "movie" | "tv";
+    mediaType?: 'movie' | 'tv';
+    posterPath?: string;
     rating?: number;
     followId?: string;
   };
   read: boolean;
   createdAt: Date;
+  virtual?: boolean;
 }
 
 export interface Activity {
@@ -112,6 +114,25 @@ class NotificationStore {
     }
   }
 
+  private readonly SEEN_VIRTUAL_KEY = 'tvdom_seen_virtual_notifs';
+
+  private getSeenVirtualIds(): Set<string> {
+    try {
+      const raw = localStorage.getItem(this.SEEN_VIRTUAL_KEY);
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  }
+
+  private markVirtualSeen(ids: string[]) {
+    try {
+      const seen = this.getSeenVirtualIds();
+      ids.forEach(id => seen.add(id));
+      // Keep only last 200 to avoid unbounded growth
+      const trimmed = [...seen].slice(-200);
+      localStorage.setItem(this.SEEN_VIRTUAL_KEY, JSON.stringify(trimmed));
+    } catch { /* ignore */ }
+  }
+
   async fetchNotifications(showLoading = false) {
     if (!browser) return;
 
@@ -128,10 +149,15 @@ class NotificationStore {
       );
 
       if (response.notifications) {
+        const seenVirtual = this.getSeenVirtualIds();
+
         this.#notifications = response.notifications.map((n: any) => ({
           ...n,
-          id: n._id || n.id, // Ensure we have an id field
-          createdAt: new Date(n.createdAt),
+          id: n._id || n.id || n.$id,
+          createdAt: new Date(n.createdAt || n.$createdAt),
+          $createdAt: new Date(n.$createdAt || n.createdAt),
+          // Virtual notifications are "read" if their ID is in the seen set
+          read: n.virtual ? seenVirtual.has(n.id || n._id || n.$id) : n.read,
         }));
 
         // Update unread count
@@ -167,6 +193,18 @@ class NotificationStore {
   async markAsRead(notificationId: string) {
     if (!browser) return;
 
+    const notification = this.#notifications.find(n => n.id === notificationId);
+
+    // Virtual notifications are tracked in localStorage, not the DB
+    if (notification?.virtual) {
+      this.markVirtualSeen([notificationId]);
+      if (notification && !notification.read) {
+        notification.read = true;
+        this.#unreadCount = Math.max(0, this.#unreadCount - 1);
+      }
+      return;
+    }
+
     try {
       await apiRequest("/api/notifications", {
         method: "PATCH",
@@ -178,9 +216,6 @@ class NotificationStore {
       });
 
       // Update local state
-      const notification = this.#notifications.find(
-        (n) => n.id === notificationId,
-      );
       if (notification && !notification.read) {
         notification.read = true;
         this.#unreadCount = Math.max(0, this.#unreadCount - 1);
@@ -192,6 +227,12 @@ class NotificationStore {
 
   async markAllAsRead() {
     if (!browser) return;
+
+    // Mark all virtual ones in localStorage
+    const virtualIds = this.#notifications
+      .filter(n => n.virtual && !n.read)
+      .map(n => n.id);
+    if (virtualIds.length > 0) this.markVirtualSeen(virtualIds);
 
     try {
       await apiRequest("/api/notifications", {

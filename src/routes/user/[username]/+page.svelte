@@ -36,6 +36,9 @@
         personFavorites,
     } = data;
 
+    // Resolve the target user's ID — Appwrite docs use $id, we also map to _id/id
+    const targetUserId: string = (user as any)._id || (user as any).id || (user as any).$id;
+
     let activeTab = $state<
         "overview" | "watchlist" | "watched" | "reviews" | "persons" | "follows"
     >("overview");

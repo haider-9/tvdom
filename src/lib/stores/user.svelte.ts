@@ -667,6 +667,20 @@ class UserStore {
   }
 
   // Follow methods
+  async checkIfFollowing(targetUserId: string): Promise<boolean> {
+    const followerId = this.getUserId();
+    if (!followerId) return false;
+    try {
+      const res = await apiRequest(
+        `/api/follows?userId=${followerId}&type=following`
+      );
+      const follows: any[] = res.follows || [];
+      return follows.some((f: any) => f.followingId === targetUserId);
+    } catch {
+      return false;
+    }
+  }
+
   async followUser(followingId: string): Promise<void> {
     if (!this.#authState.user) return;
 

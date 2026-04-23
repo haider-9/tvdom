@@ -1,191 +1,120 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import {
-        Bell,
-        Check,
-        CheckCheck,
-        Trash2,
-        Filter,
-        User,
-        Star,
-        Heart,
-        Eye,
-        Clock,
-        Globe,
+        Bell, Check, CheckCheck, Trash2,
+        User, Star, Heart, Eye, Globe,
+        Film, Tv, TrendingUp, Calendar, Users, Zap,
     } from "lucide-svelte";
-    import { Card } from "$lib/components/ui/card";
     import { Button } from "$lib/components/ui/button";
     import { Badge } from "$lib/components/ui/badge";
     import { notificationStore } from "$lib/stores/notification.svelte.js";
     import { userStore } from "$lib/stores/user.svelte";
     import { goto } from "$app/navigation";
-    // import { formatDistanceToNow } from "date-fns";
 
-    // Simple time formatting function
-    function formatDistanceToNow(
-        date: Date,
-        options?: { addSuffix?: boolean },
-    ): string {
+    function timeAgo(date: Date): string {
         const now = new Date();
-        const diffInMs = now.getTime() - date.getTime();
-        const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-        const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-
-        if (diffInMinutes < 1) {
-            return options?.addSuffix ? "just now" : "now";
-        } else if (diffInMinutes < 60) {
-            return options?.addSuffix
-                ? `${diffInMinutes} minutes ago`
-                : `${diffInMinutes}m`;
-        } else if (diffInHours < 24) {
-            return options?.addSuffix
-                ? `${diffInHours} hours ago`
-                : `${diffInHours}h`;
-        } else {
-            return options?.addSuffix
-                ? `${diffInDays} days ago`
-                : `${diffInDays}d`;
-        }
+        const diff = now.getTime() - new Date(date).getTime();
+        const mins = Math.floor(diff / 60000);
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(diff / 86400000);
+        if (mins < 1) return 'just now';
+        if (mins < 60) return `${mins}m ago`;
+        if (hours < 24) return `${hours}h ago`;
+        if (days < 7) return `${days}d ago`;
+        return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
 
     const notifications = $derived(notificationStore.notifications);
     const unreadCount = $derived(notificationStore.unreadCount);
     const isLoading = $derived(notificationStore.isLoading);
 
-    let selectedType = $state<string>("all");
+    let selectedType = $state<string>('all');
     let showUnreadOnly = $state(false);
 
-    const notificationTypes = [
-        { value: "all", label: "All", icon: Bell },
-        { value: "follow", label: "Follows", icon: User },
-        { value: "rating", label: "Ratings", icon: Star },
-        { value: "review", label: "Reviews", icon: Star },
-        { value: "system", label: "System", icon: Globe },
-        { value: "api_change", label: "Updates", icon: Globe },
+    const typeFilters = [
+        { value: 'all',         label: 'All',        icon: Bell },
+        { value: 'follow',      label: 'Follows',    icon: Users },
+        { value: 'activity',    label: 'Activity',   icon: Zap },
+        { value: 'new_release', label: 'Releases',   icon: Film },
+        { value: 'upcoming',    label: 'Upcoming',   icon: Calendar },
+        { value: 'trending',    label: 'Trending',   icon: TrendingUp },
+        { value: 'rating',      label: 'Ratings',    icon: Star },
+        { value: 'system',      label: 'System',     icon: Globe },
     ];
 
-    const filteredNotifications = $derived.by(() => {
-        let filtered = notifications;
-
-        if (selectedType !== "all") {
-            filtered = filtered.filter((n) => n.type === selectedType);
-        }
-
-        if (showUnreadOnly) {
-            filtered = filtered.filter((n) => !n.read);
-        }
-
-        return filtered;
+    const filtered = $derived.by(() => {
+        let list = notifications;
+        if (selectedType !== 'all') list = list.filter(n => n.type === selectedType);
+        if (showUnreadOnly) list = list.filter(n => !n.read);
+        return list;
     });
 
-    function getNotificationIcon(type: string) {
+    function iconFor(type: string) {
         switch (type) {
-            case "follow":
-            case "unfollow":
-                return User;
-            case "rating":
-            case "review":
-                return Star;
-            case "watchlist_add":
-                return Heart;
-            case "watched_add":
-                return Eye;
-            case "system":
-            case "api_change":
-                return Globe;
-            default:
-                return Bell;
+            case 'follow': case 'unfollow': return Users;
+            case 'activity': return Zap;
+            case 'rating': case 'review': return Star;
+            case 'new_release': return Film;
+            case 'upcoming': return Calendar;
+            case 'trending': return TrendingUp;
+            case 'watchlist_add': return Heart;
+            case 'watched_add': return Eye;
+            case 'system': case 'api_change': return Globe;
+            default: return Bell;
         }
     }
 
-    function getNotificationColor(type: string) {
+    function colorFor(type: string) {
         switch (type) {
-            case "follow":
-            case "unfollow":
-                return "bg-blue-500/10 text-blue-500";
-            case "rating":
-            case "review":
-                return "bg-yellow-500/10 text-yellow-500";
-            case "watchlist_add":
-                return "bg-red-500/10 text-red-500";
-            case "watched_add":
-                return "bg-green-500/10 text-green-500";
-            case "system":
-                return "bg-purple-500/10 text-purple-500";
-            case "api_change":
-                return "bg-orange-500/10 text-orange-500";
-            default:
-                return "bg-gray-500/10 text-gray-500";
+            case 'follow': case 'unfollow': return 'bg-blue-500/15 text-blue-500';
+            case 'activity': return 'bg-violet-500/15 text-violet-500';
+            case 'rating': case 'review': return 'bg-yellow-500/15 text-yellow-500';
+            case 'new_release': return 'bg-green-500/15 text-green-500';
+            case 'upcoming': return 'bg-cyan-500/15 text-cyan-500';
+            case 'trending': return 'bg-orange-500/15 text-orange-500';
+            case 'watchlist_add': return 'bg-red-500/15 text-red-500';
+            case 'system': case 'api_change': return 'bg-purple-500/15 text-purple-500';
+            default: return 'bg-muted text-muted-foreground';
         }
     }
 
-    function getTypeLabel(type: string) {
-        switch (type) {
-            case "follow":
-                return "New Follower";
-            case "unfollow":
-                return "Unfollowed";
-            case "rating":
-                return "New Rating";
-            case "review":
-                return "New Review";
-            case "watchlist_add":
-                return "Watchlist";
-            case "watched_add":
-                return "Watched";
-            case "system":
-                return "System";
-            case "api_change":
-                return "Update";
-            default:
-                return "Notification";
-        }
+    function labelFor(type: string) {
+        const map: Record<string, string> = {
+            follow: 'Follow', unfollow: 'Unfollow',
+            activity: 'Activity', rating: 'Rating', review: 'Review',
+            new_release: 'New Release', upcoming: 'Upcoming',
+            trending: 'Trending', watchlist_add: 'Watchlist',
+            watched_add: 'Watched', system: 'System', api_change: 'Update',
+        };
+        return map[type] ?? 'Notification';
     }
 
-    async function markAsRead(notificationId: string) {
-        await notificationStore.markAsRead(notificationId);
+    function posterUrl(path?: string) {
+        if (!path) return null;
+        if (path.startsWith('http')) return path;
+        return `https://image.tmdb.org/t/p/w92${path}`;
     }
 
-    async function markAllAsRead() {
-        await notificationStore.markAllAsRead();
-    }
-
-    async function deleteNotification(notificationId: string) {
-        await notificationStore.deleteNotification(notificationId);
-    }
-
-    function handleNotificationClick(notification: any) {
-        // Mark as read when clicked
-        if (!notification.read) {
-            markAsRead(notification.id);
-        }
-
-        // Navigate based on notification type
-        switch (notification.type) {
-            case "follow":
-            case "unfollow":
-                if (notification.data?.actorId) {
-                    goto(`/user/${notification.data.actorId}`);
-                }
+    function handleClick(n: any) {
+        if (!n.read && !n.virtual) notificationStore.markAsRead(n.id);
+        const d = n.data;
+        if (!d) return;
+        switch (n.type) {
+            case 'follow': case 'unfollow':
+                if (d.actorId) goto(`/user/${d.actorId}`); break;
+            case 'activity':
+                if (d.mediaId && d.mediaType) goto(`/${d.mediaType}/${d.mediaId}`);
+                else if (d.actorId) goto(`/user/${d.actorId}`);
                 break;
-            case "rating":
-            case "review":
-                if (notification.data?.mediaId) {
-                    const mediaType = notification.data.mediaType || "movie";
-                    goto(`/${mediaType}/${notification.data.mediaId}`);
-                }
-                break;
+            case 'rating': case 'review':
+                if (d.mediaId && d.mediaType) goto(`/${d.mediaType}/${d.mediaId}`); break;
+            case 'new_release': case 'upcoming': case 'trending':
+                if (d.mediaId && d.mediaType) goto(`/${d.mediaType}/${d.mediaId}`); break;
         }
     }
 
     onMount(() => {
-        if (!userStore.isAuthenticated) {
-            goto("/login");
-            return;
-        }
-
-        // Load notifications
+        if (!userStore.isAuthenticated) { goto('/login'); return; }
         notificationStore.fetchNotifications(true);
     });
 </script>
@@ -195,295 +124,160 @@
 </svelte:head>
 
 <div class="min-h-screen bg-background">
-    <div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto px-4 py-8 pt-32">
+
         <!-- Header -->
-        <div class="mb-8">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h1 class="text-3xl font-bold text-foreground">
-                        Notifications
-                    </h1>
-                    <p class="text-muted-foreground">
-                        {#if unreadCount > 0}
-                            You have {unreadCount} unread notification{unreadCount ===
-                            1
-                                ? ""
-                                : "s"}
-                        {:else}
-                            You're all caught up!
-                        {/if}
-                    </p>
-                </div>
-
-                {#if unreadCount > 0}
-                    <Button
-                        onclick={markAllAsRead}
-                        variant="outline"
-                        class="gap-2"
-                    >
-                        <CheckCheck class="w-4 h-4" />
-                        Mark all as read
-                    </Button>
-                {/if}
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-3xl font-bold">Notifications</h1>
+                <p class="text-muted-foreground text-sm mt-1">
+                    {#if unreadCount > 0}
+                        {unreadCount} unread
+                    {:else}
+                        All caught up
+                    {/if}
+                </p>
             </div>
-
-            <!-- Filters -->
-            <Card class="p-4">
-                <div class="flex flex-wrap items-center gap-4">
-                    <!-- Type Filter -->
-                    <div class="flex items-center gap-2">
-                        <Filter class="w-4 h-4 text-muted-foreground" />
-                        <span class="text-sm font-medium text-foreground"
-                            >Filter by:</span
-                        >
-                        <div class="flex flex-wrap gap-2">
-                            {#each notificationTypes as type}
-                                {@const IconComponent = type.icon}
-                                <Button
-                                    variant={selectedType === type.value
-                                        ? "default"
-                                        : "outline"}
-                                    size="sm"
-                                    onclick={() => (selectedType = type.value)}
-                                    class="gap-1"
-                                >
-                                    <IconComponent class="w-3 h-3" />
-                                    {type.label}
-                                </Button>
-                            {/each}
-                        </div>
-                    </div>
-
-                    <!-- Unread Only Toggle -->
-                    <div class="flex items-center gap-2 ml-auto">
-                        <Button
-                            variant={showUnreadOnly ? "default" : "outline"}
-                            size="sm"
-                            onclick={() => (showUnreadOnly = !showUnreadOnly)}
-                            class="gap-2"
-                        >
-                            <Bell class="w-3 h-3" />
-                            Unread only
-                        </Button>
-                    </div>
-                </div>
-            </Card>
+            {#if unreadCount > 0}
+                <Button onclick={() => notificationStore.markAllAsRead()} variant="outline" class="gap-2">
+                    <CheckCheck class="w-4 h-4" />
+                    Mark all read
+                </Button>
+            {/if}
         </div>
 
-        <!-- Notifications List -->
+        <!-- Type filter pills -->
+        <div class="flex gap-2 flex-wrap mb-4">
+            {#each typeFilters as f}
+                {@const Icon = f.icon}
+                <button
+                    onclick={() => selectedType = f.value}
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all
+                        {selectedType === f.value
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-muted/50 text-muted-foreground border-border hover:bg-accent'}"
+                >
+                    <Icon class="w-3 h-3" />
+                    {f.label}
+                </button>
+            {/each}
+            <button
+                onclick={() => showUnreadOnly = !showUnreadOnly}
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ml-auto
+                    {showUnreadOnly
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-muted/50 text-muted-foreground border-border hover:bg-accent'}"
+            >
+                <Bell class="w-3 h-3" />
+                Unread only
+            </button>
+        </div>
+
+        <!-- List -->
         {#if isLoading && notifications.length === 0}
-            <div class="flex items-center justify-center py-12">
-                <div class="text-center">
-                    <div
-                        class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"
-                    ></div>
-                    <p class="text-muted-foreground">
-                        Loading notifications...
-                    </p>
-                </div>
+            <div class="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                <div class="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p>Loading notifications...</p>
             </div>
-        {:else if filteredNotifications.length === 0}
-            <Card class="p-12 text-center">
-                <Bell class="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                <h2 class="text-2xl font-bold mb-2 text-foreground">
-                    {notifications.length === 0
-                        ? "No notifications yet"
-                        : "No matching notifications"}
+        {:else if filtered.length === 0}
+            <div class="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                <Bell class="w-16 h-16 mb-4 opacity-20" />
+                <h2 class="text-xl font-semibold mb-1">
+                    {notifications.length === 0 ? 'No notifications yet' : 'No matching notifications'}
                 </h2>
-                <p class="text-muted-foreground">
+                <p class="text-sm">
                     {notifications.length === 0
-                        ? "When you get notifications, they'll appear here"
-                        : "Try adjusting your filters to see more notifications"}
+                        ? 'Follow people and add to your watchlist to get notified'
+                        : 'Try a different filter'}
                 </p>
-            </Card>
+            </div>
         {:else}
-            <div class="space-y-4">
-                {#each filteredNotifications as notification (notification.id)}
-                    <Card
-                        class="p-4 transition-all duration-200 hover:shadow-md cursor-pointer {!notification.read
-                            ? 'border-l-4 border-l-primary bg-primary/5'
-                            : ''}"
-                        onclick={() => handleNotificationClick(notification)}
+            <div class="space-y-2">
+                {#each filtered as n (n.id)}
+                    {@const Icon = iconFor(n.type)}
+                    {@const poster = posterUrl(n.data?.posterPath)}
+                    <div
+                        role="button"
+                        tabindex="0"
+                        onclick={() => handleClick(n)}
+                        onkeydown={(e) => e.key === 'Enter' && handleClick(n)}
+                        class="group flex items-start gap-3 p-4 rounded-xl border transition-all cursor-pointer
+                            {!n.read && !n.virtual
+                                ? 'bg-primary/5 border-primary/20 hover:bg-primary/10'
+                                : 'bg-card border-border/60 hover:bg-accent/50'}"
                     >
-                        <div class="flex items-start gap-4">
-                            <!-- Icon/Avatar -->
-                            <div class="flex-shrink-0 mt-1">
-                                {#if notification.data?.actorAvatar}
-                                    <div class="relative">
-                                        <img
-                                            src={notification.data.actorAvatar}
-                                            alt={notification.data.actorName}
-                                            class="w-12 h-12 rounded-full object-cover"
-                                        />
-                                        {#if !notification.read}
-                                            <div
-                                                class="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full"
-                                            ></div>
+                        <!-- Left: avatar or icon -->
+                        <div class="shrink-0 mt-0.5">
+                            {#if n.data?.actorAvatar}
+                                <div class="relative">
+                                    <img src={n.data.actorAvatar} alt={n.data.actorName} class="w-11 h-11 rounded-full object-cover" />
+                                    <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full {colorFor(n.type)} flex items-center justify-center">
+                                        <Icon class="w-2.5 h-2.5" />
+                                    </div>
+                                </div>
+                            {:else if poster}
+                                <div class="relative">
+                                    <img src={poster} alt={n.data?.mediaTitle} class="w-11 h-14 rounded-lg object-cover" />
+                                    <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full {colorFor(n.type)} flex items-center justify-center">
+                                        <Icon class="w-2.5 h-2.5" />
+                                    </div>
+                                </div>
+                            {:else}
+                                <div class="w-11 h-11 rounded-full {colorFor(n.type)} flex items-center justify-center">
+                                    <Icon class="w-5 h-5" />
+                                </div>
+                            {/if}
+                        </div>
+
+                        <!-- Content -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap mb-0.5">
+                                        <span class="font-semibold text-sm {!n.read && !n.virtual ? 'text-foreground' : 'text-foreground/90'}">
+                                            {n.title}
+                                        </span>
+                                        <span class="text-[0.65rem] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
+                                            {labelFor(n.type)}
+                                        </span>
+                                        {#if !n.read && !n.virtual}
+                                            <span class="w-2 h-2 rounded-full bg-primary shrink-0"></span>
+                                        {/if}
+                                        {#if n.virtual}
+                                            <span class="text-[0.6rem] px-1.5 py-0.5 rounded-full bg-muted/50 text-muted-foreground/70 border border-border/50">
+                                                live
+                                            </span>
                                         {/if}
                                     </div>
-                                {:else}
-                                    {@const IconComponent = getNotificationIcon(
-                                        notification.type,
-                                    )}
-                                    <div
-                                        class="relative w-12 h-12 rounded-full {getNotificationColor(
-                                            notification.type,
-                                        )} flex items-center justify-center"
-                                    >
-                                        <IconComponent class="w-6 h-6" />
-                                        {#if !notification.read}
-                                            <div
-                                                class="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full"
-                                            ></div>
-                                        {/if}
-                                    </div>
-                                {/if}
-                            </div>
+                                    <p class="text-sm text-muted-foreground leading-snug line-clamp-2">{n.message}</p>
+                                    <time class="text-xs text-muted-foreground/60 mt-1 block">{timeAgo(n.createdAt)}</time>
+                                </div>
 
-                            <!-- Content -->
-                            <div class="flex-1 min-w-0">
-                                <div
-                                    class="flex items-start justify-between gap-4"
-                                >
-                                    <div class="flex-1">
-                                        <!-- Title and Type Badge -->
-                                        <div
-                                            class="flex items-center gap-2 mb-2"
+                                <!-- Actions -->
+                                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                    {#if !n.read && !n.virtual}
+                                        <button
+                                            onclick={(e) => { e.stopPropagation(); notificationStore.markAsRead(n.id); }}
+                                            class="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                            title="Mark as read"
                                         >
-                                            <h3
-                                                class="font-semibold text-foreground {!notification.read
-                                                    ? 'font-bold'
-                                                    : ''}"
-                                            >
-                                                {notification.title}
-                                            </h3>
-                                            <Badge
-                                                variant="secondary"
-                                                class="text-xs"
-                                            >
-                                                {getTypeLabel(
-                                                    notification.type,
-                                                )}
-                                            </Badge>
-                                            {#if !notification.read}
-                                                <div
-                                                    class="w-2 h-2 bg-primary rounded-full"
-                                                ></div>
-                                            {/if}
-                                        </div>
-
-                                        <!-- Message -->
-                                        <p
-                                            class="text-sm text-muted-foreground mb-3 {!notification.read
-                                                ? 'font-medium text-foreground/80'
-                                                : ''}"
+                                            <Check class="w-3.5 h-3.5" />
+                                        </button>
+                                    {/if}
+                                    {#if !n.virtual}
+                                        <button
+                                            onclick={(e) => { e.stopPropagation(); notificationStore.deleteNotification(n.id); }}
+                                            class="p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"
+                                            title="Delete"
                                         >
-                                            {notification.message}
-                                        </p>
-
-                                        <!-- Additional Data -->
-                                        {#if notification.data?.mediaTitle}
-                                            <div
-                                                class="flex items-center gap-4 text-xs text-muted-foreground mb-2"
-                                            >
-                                                <div
-                                                    class="flex items-center gap-1"
-                                                >
-                                                    {#if notification.data.mediaType === "movie"}
-                                                        <Clock
-                                                            class="w-3 h-3"
-                                                        />
-                                                        <span>Movie</span>
-                                                    {:else}
-                                                        <Clock
-                                                            class="w-3 h-3"
-                                                        />
-                                                        <span>TV Show</span>
-                                                    {/if}
-                                                </div>
-                                                <span class="font-medium"
-                                                    >"{notification.data
-                                                        .mediaTitle}"</span
-                                                >
-                                                {#if notification.data.rating}
-                                                    <div
-                                                        class="flex items-center gap-1"
-                                                    >
-                                                        <Star class="w-3 h-3" />
-                                                        <span
-                                                            >{notification.data
-                                                                .rating}/10</span
-                                                        >
-                                                    </div>
-                                                {/if}
-                                            </div>
-                                        {/if}
-
-                                        <!-- Timestamp -->
-                                        <time
-                                            class="text-xs text-muted-foreground"
-                                        >
-                                            {formatDistanceToNow(
-                                                notification.$createdAt,
-                                                { addSuffix: true },
-                                            )}
-                                        </time>
-                                    </div>
-
-                                    <!-- Actions -->
-                                    <div class="flex items-center gap-1">
-                                        {#if !notification.read}
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onclick={(e) => {
-                                                    e.stopPropagation();
-                                                    markAsRead(notification.id);
-                                                }}
-                                                class="h-8 w-8 p-0"
-                                                title="Mark as read"
-                                            >
-                                                <Check class="w-4 h-4" />
-                                            </Button>
-                                        {/if}
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onclick={(e) => {
-                                                e.stopPropagation();
-                                                deleteNotification(
-                                                    notification.id,
-                                                );
-                                            }}
-                                            class="h-8 w-8 p-0 text-muted-foreground hover:text-red-500"
-                                            title="Delete notification"
-                                        >
-                                            <Trash2 class="w-4 h-4" />
-                                        </Button>
-                                    </div>
+                                            <Trash2 class="w-3.5 h-3.5" />
+                                        </button>
+                                    {/if}
                                 </div>
                             </div>
                         </div>
-                    </Card>
+                    </div>
                 {/each}
-            </div>
-        {/if}
-
-        <!-- Load More Button (if needed) -->
-        {#if filteredNotifications.length >= 20}
-            <div class="mt-8 text-center">
-                <Button
-                    variant="outline"
-                    onclick={() => notificationStore.fetchNotifications()}
-                    disabled={isLoading}
-                >
-                    {#if isLoading}
-                        <div
-                            class="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"
-                        ></div>
-                    {/if}
-                    Load more notifications
-                </Button>
             </div>
         {/if}
     </div>

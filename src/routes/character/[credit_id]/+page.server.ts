@@ -73,7 +73,6 @@ async function findJikanCharacterId(name: string): Promise<number | null> {
     );
     if (!res.ok) return null;
     const json = await res.json();
-    // Pick the first result whose name closely matches
     const nameLower = name.toLowerCase();
     const match = (json.data as any[])?.find(
       (c: any) =>
@@ -103,40 +102,12 @@ async function fetchJikanPictures(malId: number): Promise<string[]> {
   }
 }
 
-// Fetch images from Reddit public JSON (no auth needed)
+// Fetch images from Reddit public JSON — CLIENT SIDE ONLY
+// Reddit blocks server/datacenter IPs; this must run in the browser
 async function fetchRedditImages(characterName: string): Promise<string[]> {
-  try {
-    const query = encodeURIComponent(`${characterName} anime`);
-    // Search across anime-related subreddits
-    const url = `https://www.reddit.com/r/anime+animefanart+AnimeART/search.json?q=${query}&restrict_sr=1&sort=top&t=all&limit=15&type=link`;
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'TVDom/1.0 (character gallery fetcher)' },
-    });
-    if (!res.ok) return [];
-    const json = await res.json();
-    const posts: any[] = json?.data?.children ?? [];
-    const images: string[] = [];
-    for (const post of posts) {
-      const d = post.data;
-      // Direct image posts
-      if (d.url && /\.(jpg|jpeg|png|webp)(\?.*)?$/i.test(d.url)) {
-        images.push(d.url);
-      }
-      // Reddit-hosted images
-      if (d.url?.startsWith('https://i.redd.it/')) {
-        images.push(d.url);
-      }
-      // Preview images (fallback)
-      const preview = d.preview?.images?.[0]?.source?.url;
-      if (preview && images.length < 10) {
-        images.push(preview.replace(/&amp;/g, '&'));
-      }
-      if (images.length >= 10) break;
-    }
-    return [...new Set(images)];
-  } catch {
-    return [];
-  }
+  // This function is intentionally left empty on the server.
+  // Reddit image fetching is handled client-side via /api/character-images
+  return [];
 }
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -155,18 +126,31 @@ export const load: PageServerLoad = async ({ params }) => {
 
     const characterName: string = c.name.full;
 
-    // Fetch Jikan pictures and Reddit images in parallel — don't block on failure
-    const malId = await findJikanCharacterId(characterName);
-    const [jikanPictures, redditImages] = await Promise.all([
-      malId ? fetchJikanPictures(malId) : Promise.resolve([]),
-      fetchRedditImages(characterName),
-    ]);
+    // Fetch Jikan pictures — sequential to respect rate limits, with timeout
+    let jikanPictures: string[] = [];
+    try {
+      const malId = await Promise.race([
+        findJikanCharacterId(characterName),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000)),
+      ]);
+      if (malId) {
+        jikanPictures = await Promise.race([
+          fetchJikanPictures(malId),
+          new Promise<string[]>((resolve) => setTimeout(() => resolve([]), 4000)),
+        ]);
+      }
+    } catch {
+      // Jikan unavailable — continue without it
+    }
 
-    // Build gallery: AniList image first, then Jikan, then Reddit — deduplicated
+    // Reddit images are fetched client-side (server IPs are blocked by Reddit)
+    const redditImages: string[] = [];
+
+    // Build gallery: AniList image first, then Jikan — deduplicated
     const anilistImage: string | null = c.image?.large ?? null;
     const allPictures: string[] = [];
     if (anilistImage) allPictures.push(anilistImage);
-    for (const url of [...jikanPictures, ...redditImages]) {
+    for (const url of jikanPictures) {
       if (!allPictures.includes(url)) allPictures.push(url);
     }
 

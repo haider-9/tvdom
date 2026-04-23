@@ -535,51 +535,56 @@
         </div>
       {:else if activeTab === "reviews"}
         <!-- Reviews Tab -->
-        <div
-          class="bg-card rounded-xl shadow-sm border border-border p-6"
-        >
-          <h2 class="text-xl font-semibold  mb-6">
-            Your Reviews
-          </h2>
+        <div class="bg-card rounded-xl shadow-sm border border-border p-4 sm:p-6">
+          <h2 class="text-xl font-semibold mb-6">Your Reviews</h2>
           {#if userStore.userRatings.length > 0}
-            <div class="space-y-6">
+            <div class="space-y-4">
               {#each userStore.userRatings as rating}
-                <div
-                  class="border border-border rounded-lg p-4"
-                >
-                  <div class="flex items-start gap-4">
-                    <div class="flex items-center gap-2">
-                      <div class="flex items-center gap-1">
-                        {#each Array(10) as _, i}
-                          <Star
-                            class="w-4 h-4 {i < rating.rating
-                              ? 'text-accent fill-current'
-                              : 'text-muted-foreground/40'}"
-                          />
-                        {/each}
+                <div class="border border-border rounded-xl p-4">
+                  <div class="flex flex-col sm:flex-row sm:items-start gap-3">
+                    <!-- Poster placeholder / media type icon -->
+                    <div class="flex items-center gap-3 sm:gap-0">
+                      <div class="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        {#if rating.mediaType === 'movie'}
+                          <Film class="w-5 h-5 text-muted-foreground" />
+                        {:else}
+                          <Tv class="w-5 h-5 text-muted-foreground" />
+                        {/if}
                       </div>
-                      <span
-                        class="text-sm font-medium "
-                      >
-                        {rating.rating}/10
-                      </span>
+                      <!-- On mobile show score inline with icon -->
+                      <div class="sm:hidden flex items-center gap-1.5 ml-2">
+                        <Star class="w-4 h-4 text-yellow-500 fill-current" />
+                        <span class="font-semibold text-sm">{rating.rating}/10</span>
+                        <span class="text-muted-foreground text-xs capitalize">· {rating.mediaType}</span>
+                      </div>
                     </div>
-                    <div class="flex-1">
-                      <div class="flex items-center gap-2 mb-2">
-                        <span
-                          class="text-sm  capitalize"
-                        >
-                          {rating.mediaType}
-                        </span>
-                        <span class="text-sm text-muted-foreground">•</span>
-                        <span class="text-sm text-muted-foreground">
+
+                    <div class="flex-1 min-w-0">
+                      <!-- Desktop: score bar + meta -->
+                      <div class="hidden sm:flex items-center gap-3 mb-2 flex-wrap">
+                        <!-- Compact star display: filled dots instead of 10 icons -->
+                        <div class="flex items-center gap-0.5">
+                          {#each Array(5) as _, i}
+                            <Star class="w-3.5 h-3.5 {i < Math.round(rating.rating / 2) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30'}" />
+                          {/each}
+                        </div>
+                        <span class="text-sm font-semibold">{rating.rating}/10</span>
+                        <span class="text-muted-foreground text-xs capitalize">{rating.mediaType}</span>
+                        <span class="text-muted-foreground text-xs">·</span>
+                        <span class="text-muted-foreground text-xs">
                           {new Date(rating.$createdAt).toLocaleDateString()}
                         </span>
                       </div>
+
+                      <!-- Mobile: just date -->
+                      <p class="sm:hidden text-xs text-muted-foreground mb-1">
+                        {new Date(rating.$createdAt).toLocaleDateString()}
+                      </p>
+
                       {#if rating.review}
-                        <p class="text-sm text-muted-foreground">
-                          {rating.review}
-                        </p>
+                        <p class="text-sm text-muted-foreground leading-relaxed">{rating.review}</p>
+                      {:else}
+                        <p class="text-sm text-muted-foreground/50 italic">No written review</p>
                       {/if}
                     </div>
                   </div>
@@ -589,14 +594,8 @@
           {:else}
             <div class="text-center py-12 text-muted-foreground">
               <Star class="w-16 h-16 mx-auto mb-4" />
-              <h3
-                class="text-lg font-semibold  mb-2"
-              >
-                No reviews yet
-              </h3>
-              <p>
-                Start rating movies and TV shows to see your reviews here
-              </p>
+              <h3 class="text-lg font-semibold mb-2">No reviews yet</h3>
+              <p>Start rating movies and TV shows to see your reviews here</p>
             </div>
           {/if}
         </div>

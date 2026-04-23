@@ -44,9 +44,13 @@ export const GET: RequestHandler = async ({ url }) => {
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
-    const { followerId, followingId } = await request.json();
+    const body = await request.json();
+    const { followerId, followingId } = body;
+
+    console.log('Follow API received:', { followerId, followingId, body });
 
     if (!followerId || !followingId) {
+      console.error('Missing IDs:', { followerId, followingId });
       return json(
         { error: "Follower ID and Following ID are required" },
         { status: 400 },

@@ -85,20 +85,22 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 
     // Check if profile is private
     if (user.isPrivate) {
-      return {
-        user: {
-          ...user,
-          joinedAt: user.$createdAt,
-          lastActiveAt: user.lastActiveAt || user.$updatedAt,
-        },
-        isPrivate: true,
-        isFollowing: false,
-        ratings: [],
-        watchlist: [],
-        watched: [],
-        personRatings: [],
-        personFavorites: [],
-      };
+    return {
+      user: {
+        ...user,
+        _id: user.$id,
+        id: user.$id,
+        joinedAt: user.$createdAt,
+        lastActiveAt: user.lastActiveAt || user.$updatedAt,
+      },
+      isPrivate: true,
+      isFollowing: false,
+      ratings: [],
+      watchlist: [],
+      watched: [],
+      personRatings: [],
+      personFavorites: [],
+    };
     }
 
     // Check if current user is following this user
@@ -176,13 +178,31 @@ export const load: PageServerLoad = async ({ params, cookies }) => {
 
     return {
       user: {
-        ...user,
+        _id: user.$id,
+        id: user.$id,
+        username: user.username,
+        email: user.email,
+        displayName: user.displayName,
+        avatar: user.avatar || '',
+        banner: user.banner || '',
+        bio: user.bio || '',
+        location: user.location || '',
+        website: user.website || '',
         joinedAt: user.$createdAt,
         lastActiveAt: user.lastActiveAt || user.$updatedAt,
+        isVerified: user.isVerified || false,
+        isPrivate: user.isPrivate || false,
+        followerCount: user.followerCount || 0,
+        followingCount: user.followingCount || 0,
+        totalRatings: user.totalRatings || 0,
+        averageRating: user.averageRating || 0,
+        favoriteGenres: user.favoriteGenres || [],
+        watchlistCount: user.watchlistCount || 0,
+        watchedCount: user.watchedCount || 0,
       },
       isPrivate: false,
       isFollowing,
-      currentUserId, // Add this for debugging
+      currentUserId,
       ratings: ratings.documents.map((rating) => ({
         ...rating,
         createdAt: rating.$createdAt,

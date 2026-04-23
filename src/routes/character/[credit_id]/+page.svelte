@@ -3,6 +3,7 @@
   import { Badge } from "$lib/components/ui/badge";
   import { Button } from "$lib/components/ui/button";
   import type { PageData } from "./$types";
+  import { onMount } from "svelte";
 
   let { data }: { data: PageData } = $props();
   const { character } = data;
@@ -17,22 +18,49 @@
   let gallery = $state<string[]>(character.gallery ?? []);
   let redditAfter = $state<string | null>(null);
   let loadingMore = $state(false);
-  let hasMore = $state(true); // assume there might be more until proven otherwise
+  let hasMore = $state(true);
+  let redditLoaded = $state(false);
+
+  // On mount, fetch the first batch of Reddit images client-side
+  onMount(async () => {
+    await loadMore();
+    redditLoaded = true;
+  });
 
   async function loadMore() {
     if (loadingMore) return;
     loadingMore = true;
     try {
-      const params = new URLSearchParams({ name: character.name });
-      if (redditAfter) params.set('after', redditAfter);
-      const res = await fetch(`/api/character-images?${params}`);
+      // Fetch directly from Reddit in the browser — avoids server IP blocks
+      const query = encodeURIComponent(`${character.name} anime`);
+      const afterParam = redditAfter ? `&after=${redditAfter}` : '';
+      const redditUrl = `https://www.reddit.com/r/anime+animefanart+AnimeART/search.json?q=${query}&restrict_sr=1&sort=top&t=all&limit=25&type=link${afterParam}`;
+
+      const res = await fetch(redditUrl);
+      if (!res.ok) { hasMore = false; return; }
+
       const data = await res.json();
-      const newImgs: string[] = (data.images as string[]).filter(
-        (url: string) => !gallery.includes(url)
-      );
-      gallery = [...gallery, ...newImgs];
-      redditAfter = data.after ?? null;
-      if (!data.after || newImgs.length === 0) hasMore = false;
+      const posts: any[] = data?.data?.children ?? [];
+      const nextAfter: string | null = data?.data?.after ?? null;
+
+      const newImgs: string[] = [];
+      for (const post of posts) {
+        const d = post.data;
+        if (d.url?.startsWith('https://i.redd.it/')) {
+          newImgs.push(d.url);
+        } else if (d.url && /\.(jpg|jpeg|png|webp)(\?.*)?$/i.test(d.url)) {
+          newImgs.push(d.url);
+        } else {
+          const preview = d.preview?.images?.[0]?.source?.url;
+          if (preview) newImgs.push(preview.replace(/&amp;/g, '&'));
+        }
+      }
+
+      const deduped = [...new Set(newImgs)].filter((url) => !gallery.includes(url));
+      gallery = [...gallery, ...deduped];
+      redditAfter = nextAfter;
+      // Only hide the tile if Reddit has no more pages AND we got nothing new
+      if (!nextAfter) hasMore = false;
     } catch {
       hasMore = false;
     } finally {
@@ -198,6 +226,7 @@
             <Images class="w-6 h-6" />
             Photo Gallery
             <span class="text-base font-normal text-muted-foreground">({gallery.length})</span>
+            <span class="text-base font-normal text-muted-foreground">(Its a free API so give the page a refresh if it doesnt load pictures)</span>
           </h2>
         </div>
 
@@ -221,7 +250,7 @@
             {/each}
 
             <!-- Load more tile -->
-            {#if hasMore}
+            {#if hasMore || loadingMore}
               <button
                 type="button"
                 onclick={loadMore}
