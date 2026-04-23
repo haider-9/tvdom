@@ -1,198 +1,186 @@
 <script lang="ts">
-  import { Users, Film, Tv, Calendar, Star, Heart, User, ArrowLeft } from "lucide-svelte";
+  import { ArrowLeft, Heart, Film, Tv, Star, User, Calendar, Images, ChevronLeft, ChevronRight, Plus } from "lucide-svelte";
   import { Badge } from "$lib/components/ui/badge";
   import { Button } from "$lib/components/ui/button";
-  import PersonMediaCard from "$lib/components/PersonMediaCard.svelte";
-  import { goto } from "$app/navigation";
   import type { PageData } from "./$types";
 
   let { data }: { data: PageData } = $props();
+  const { character } = data;
 
-  const { credit, person, media, otherRoles, mediaType } = data;
+  const primaryMedia = character.media?.[0] ?? null;
+  const banner = character.media?.find((m: any) => m.banner)?.banner ?? null;
 
-  const characterName = credit.character || "Unknown Character";
-  const actorName = person?.name || credit.person?.name || "Unknown Actor";
-  
-  const mediaTitle = mediaType === 'movie' 
-    ? (media?.title || credit.media?.title)
-    : (media?.name || credit.media?.name);
-    
-  const mediaReleaseDate = mediaType === 'movie' 
-    ? (media?.release_date || credit.media?.release_date)
-    : (media?.first_air_date || credit.media?.first_air_date);
+  let lightboxOpen = $state(false);
+  let lightboxIndex = $state(0);
 
-  const characterImage = person?.profile_path
-    ? `https://image.tmdb.org/t/p/w500${person.profile_path}`
-    : "";
+  // Gallery — starts with server-fetched images, can load more from Reddit
+  let gallery = $state<string[]>(character.gallery ?? []);
+  let redditAfter = $state<string | null>(null);
+  let loadingMore = $state(false);
+  let hasMore = $state(true); // assume there might be more until proven otherwise
 
-  const mediaBackdrop = media?.backdrop_path
-    ? `https://image.tmdb.org/t/p/w1280${media.backdrop_path}`
-    : "";
-
-  const mediaPoster = media?.poster_path
-    ? `https://image.tmdb.org/t/p/w500${media.poster_path}`
-    : "";
-
-  function goToActor() {
-    if (person?.id) {
-      goto(`/person/${person.id}`);
+  async function loadMore() {
+    if (loadingMore) return;
+    loadingMore = true;
+    try {
+      const params = new URLSearchParams({ name: character.name });
+      if (redditAfter) params.set('after', redditAfter);
+      const res = await fetch(`/api/character-images?${params}`);
+      const data = await res.json();
+      const newImgs: string[] = (data.images as string[]).filter(
+        (url: string) => !gallery.includes(url)
+      );
+      gallery = [...gallery, ...newImgs];
+      redditAfter = data.after ?? null;
+      if (!data.after || newImgs.length === 0) hasMore = false;
+    } catch {
+      hasMore = false;
+    } finally {
+      loadingMore = false;
     }
   }
 
-  function goToMedia() {
-    if (media?.id) {
-      goto(`/${mediaType}/${media.id}`);
-    }
+  function openLightbox(i: number) { lightboxIndex = i; lightboxOpen = true; }
+  function closeLightbox() { lightboxOpen = false; }
+  function prev() { lightboxIndex = (lightboxIndex - 1 + gallery.length) % gallery.length; }
+  function next() { lightboxIndex = (lightboxIndex + 1) % gallery.length; }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (!lightboxOpen) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') prev();
+    if (e.key === 'ArrowRight') next();
   }
 
-  function goBack() {
-    history.back();
+  function formatLabel(format?: string) {
+    const map: Record<string, string> = {
+      TV: 'TV Anime', TV_SHORT: 'TV Short', MOVIE: 'Anime Film',
+      SPECIAL: 'Special', OVA: 'OVA', ONA: 'ONA',
+      MANGA: 'Manga', NOVEL: 'Novel', ONE_SHOT: 'One Shot',
+    };
+    return map[format ?? ''] ?? (format ?? 'Anime');
+  }
+
+  function formatDate(dob: { year?: number; month?: number; day?: number } | null) {
+    if (!dob || (!dob.month && !dob.day)) return null;
+    const parts: (string | number)[] = [];
+    if (dob.month) parts.push(new Date(0, dob.month - 1).toLocaleString('en', { month: 'long' }));
+    if (dob.day) parts.push(dob.day);
+    if (dob.year) parts.push(dob.year);
+    return parts.join(' ');
   }
 </script>
 
 <svelte:head>
-  <title>{characterName} - {actorName} - TVDom</title>
+  <title>{character.name} - TVDom</title>
 </svelte:head>
 
+<svelte:window onkeydown={handleKeydown} />
+
 <div class="min-h-screen">
-  <!-- Hero Section with backdrop -->
+  <!-- Hero -->
   <section
-    class="relative min-h-[70vh] w-full overflow-hidden bg-muted"
-    style={mediaBackdrop ? `background-image: url(${mediaBackdrop}); background-size: cover; background-position: center;` : ''}
+    class="relative min-h-[60vh] w-full overflow-hidden bg-muted"
+    style={banner ? `background-image:url(${banner});background-size:cover;background-position:center;` : ''}
   >
-    <div
-      class="absolute inset-0 bg-linear-to-t from-background via-background/90 to-background/30"
-    ></div>
-    <div
-      class="absolute inset-0 bg-linear-to-r from-background/80 via-transparent to-transparent"
-    ></div>
+    <div class="absolute inset-0 bg-linear-to-t from-background via-background/85 to-background/30"></div>
+    <div class="absolute inset-0 bg-linear-to-r from-background/80 via-transparent to-transparent"></div>
 
     <div class="relative container mx-auto px-4 md:px-8 py-12 md:py-16">
-      <!-- Back button -->
-      <Button
-        onclick={goBack}
-        variant="outline"
-        class="mb-6 gap-2 bg-background/80 backdrop-blur"
-      >
+      <Button onclick={() => history.back()} variant="outline" class="mb-8 gap-2 bg-background/80 backdrop-blur">
         <ArrowLeft class="w-4 h-4" />
         Back
       </Button>
 
-      <div class="flex flex-col lg:flex-row gap-8 items-start">
-        <!-- Character/Actor Image -->
+      <div class="flex flex-col lg:flex-row gap-10 items-start">
+        <!-- Character image -->
         <div class="shrink-0">
-          <div
-            class="w-48 h-72 md:w-64 md:h-96 rounded-lg overflow-hidden bg-muted shadow-2xl"
+          <button
+            onclick={() => character.gallery.length > 0 && openLightbox(0)}
+            class="block w-44 md:w-56 rounded-xl overflow-hidden shadow-2xl border-2 border-border/40 hover:border-primary/60 transition-colors group"
+            aria-label="View photo gallery"
           >
-            {#if characterImage}
-              <img
-                src={characterImage}
-                alt={actorName}
-                class="w-full h-full object-cover"
-              />
+            {#if character.image}
+              <img src={character.image} alt={character.name} class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-300" />
             {:else}
-              <div class="w-full h-full flex items-center justify-center">
-                <User class="w-20 h-20 text-muted-foreground" />
+              <div class="w-full aspect-3/4 flex items-center justify-center bg-muted">
+                <User class="w-16 h-16 text-muted-foreground" />
               </div>
             {/if}
-          </div>
+          </button>
+          {#if gallery.length > 1}
+            <p class="text-xs text-muted-foreground text-center mt-2 flex items-center justify-center gap-1">
+              <Images class="w-3.5 h-3.5" />
+              {gallery.length} photos — click to view
+            </p>
+          {/if}
         </div>
 
-        <!-- Character Info -->
-        <div class="flex-1 space-y-6">
-          <div>
-            <h1
-              class="text-4xl md:text-6xl font-bold text-foreground drop-shadow-lg mb-2"
-            >
-              {characterName}
-            </h1>
-            <p class="text-xl md:text-2xl text-muted-foreground">
-              Played by 
-              <button 
-                onclick={goToActor}
-                class="text-primary hover:text-primary/80 transition-colors underline decoration-2 underline-offset-4"
-              >
-                {actorName}
-              </button>
+        <!-- Info -->
+        <div class="flex-1 space-y-4">
+          <Badge variant="secondary" class="bg-card/80 backdrop-blur">Character</Badge>
+
+          <h1 class="text-4xl md:text-6xl font-bold text-foreground drop-shadow-lg leading-tight">
+            {character.name}
+          </h1>
+
+          {#if character.nameNative}
+            <p class="text-xl text-muted-foreground">{character.nameNative}</p>
+          {/if}
+
+          {#if character.nameAlternative?.length > 0}
+            <p class="text-sm text-muted-foreground">
+              Also known as: {character.nameAlternative.join(', ')}
             </p>
-          </div>
+          {/if}
 
-          <div class="flex flex-wrap items-center gap-3">
-            <Badge
-              variant="secondary"
-              class="bg-card/80 backdrop-blur text-base px-4 py-2"
-            >
-              Character
-            </Badge>
-
-            {#if mediaReleaseDate}
-              <Badge
-                variant="outline"
-                class="bg-card/50 backdrop-blur px-4 py-2 flex items-center gap-2"
-              >
-                <Calendar class="w-4 h-4" />
-                {new Date(mediaReleaseDate).getFullYear()}
+          <div class="flex flex-wrap gap-2">
+            {#if character.favourites > 0}
+              <Badge variant="outline" class="bg-card/50 backdrop-blur gap-1.5">
+                <Heart class="w-3.5 h-3.5 fill-red-400 text-red-400" />
+                {character.favourites.toLocaleString()} favourites
               </Badge>
             {/if}
-
-            <Badge
-              variant="outline"
-              class="bg-card/50 backdrop-blur px-4 py-2 flex items-center gap-2"
-            >
-              {mediaType === 'movie' ? 'Movie' : 'TV Show'}
-            </Badge>
+            {#if character.gender}
+              <Badge variant="outline" class="bg-card/50 backdrop-blur">{character.gender}</Badge>
+            {/if}
+            {#if character.age}
+              <Badge variant="outline" class="bg-card/50 backdrop-blur">Age: {character.age}</Badge>
+            {/if}
+            {#if formatDate(character.dateOfBirth)}
+              <Badge variant="outline" class="bg-card/50 backdrop-blur gap-1.5">
+                <Calendar class="w-3.5 h-3.5" />
+                {formatDate(character.dateOfBirth)}
+              </Badge>
+            {/if}
           </div>
 
-          <!-- Featured In -->
-          <div class="space-y-4">
-            <h3 class="text-xl font-semibold">Featured In</h3>
-            <button
-              onclick={goToMedia}
-              class="group flex items-center gap-4 p-4 bg-card/60 backdrop-blur rounded-lg hover:bg-card/80 transition-all duration-300 border border-border/60 hover:border-primary/20"
-            >
-              {#if mediaPoster}
-                <div class="w-16 h-24 rounded overflow-hidden shrink-0">
-                  <img
-                    src={mediaPoster}
-                    alt={mediaTitle}
-                    class="w-full h-full object-cover"
-                  />
-                </div>
+          {#if character.description}
+            <p class="text-muted-foreground leading-relaxed max-w-2xl line-clamp-5 text-sm md:text-base">
+              {character.description}
+            </p>
+          {/if}
+
+          {#if primaryMedia}
+            <div class="flex items-center gap-3 p-3 bg-card/60 backdrop-blur rounded-xl border border-border/60 w-fit">
+              {#if primaryMedia.cover}
+                <img src={primaryMedia.cover} alt={primaryMedia.title} class="w-10 h-14 rounded object-cover" />
               {/if}
-              <div class="text-left">
-                <h4 class="font-semibold text-lg group-hover:text-primary transition-colors">
-                  {mediaTitle}
-                </h4>
-                {#if media?.overview}
-                  <p class="text-sm text-muted-foreground line-clamp-2 mt-1">
-                    {media.overview}
-                  </p>
-                {/if}
-                {#if media?.vote_average}
-                  <div class="flex items-center gap-1 mt-2">
-                    <Star class="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    <span class="text-sm font-medium">{media.vote_average.toFixed(1)}</span>
-                  </div>
-                {/if}
+              <div>
+                <p class="text-xs text-muted-foreground uppercase tracking-wider mb-0.5">Appears in</p>
+                <p class="font-semibold text-sm">{primaryMedia.title}</p>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <span class="text-xs text-muted-foreground">{formatLabel(primaryMedia.format)}</span>
+                  {#if primaryMedia.year}
+                    <span class="text-xs text-muted-foreground">· {primaryMedia.year}</span>
+                  {/if}
+                  {#if primaryMedia.score}
+                    <span class="inline-flex items-center gap-0.5 text-xs text-muted-foreground">
+                      · <Star class="w-3 h-3 fill-yellow-400 text-yellow-400" /> {primaryMedia.score / 10}
+                    </span>
+                  {/if}
+                </div>
               </div>
-            </button>
-          </div>
-
-          <!-- Actor Bio (if available) -->
-          {#if person?.biography}
-            <div class="space-y-4">
-              <h3 class="text-xl font-semibold">About {actorName}</h3>
-              <p class="text-muted-foreground leading-relaxed line-clamp-4">
-                {person.biography}
-              </p>
-              <Button
-                onclick={goToActor}
-                variant="outline"
-                class="gap-2"
-              >
-                <Users class="w-4 h-4" />
-                View Full Profile
-              </Button>
             </div>
           {/if}
         </div>
@@ -200,120 +188,182 @@
     </div>
   </section>
 
-  <main class="container mx-auto px-4 md:px-8 py-12">
-    {#if otherRoles && otherRoles.length > 0}
-      <section class="mb-16">
-        <div class="mb-8">
-          <h2 class="text-3xl md:text-4xl font-bold flex items-center gap-3">
-            <Users class="w-8 h-8" />
-            Other Roles by {actorName}
+  <main class="container mx-auto px-4 md:px-8 py-12 space-y-16">
+
+    <!-- Photo Gallery -->
+    {#if gallery.length > 0}
+      <section>
+        <div class="mb-6 flex items-center justify-between">
+          <h2 class="text-2xl md:text-3xl font-bold flex items-center gap-2">
+            <Images class="w-6 h-6" />
+            Photo Gallery
+            <span class="text-base font-normal text-muted-foreground">({gallery.length})</span>
           </h2>
-          <p class="text-muted-foreground mt-2">
-            Discover other characters played by this talented actor
-          </p>
         </div>
 
+        <!-- Horizontal scrolling strip — same style as media detail page -->
         <div class="overflow-x-auto scrollbar-hide -mx-4 md:mx-0">
-          <div class="flex gap-16 px-4 md:px-0 pb-4">
-            {#each otherRoles as role}
-              <div class="shrink-0 w-[280px]">
-                <PersonMediaCard 
-                  media={role} 
-                  type={role.media_type} 
-                  showCharacter={true} 
+          <div class="flex gap-4 px-4 md:px-0">
+            {#each gallery as img, i}
+              <button
+                type="button"
+                onclick={() => openLightbox(i)}
+                class="shrink-0 w-[200px] h-[280px] overflow-hidden rounded-lg bg-muted hover:shadow-xl transition-all duration-300 hover:-translate-y-2 cursor-pointer border-2 border-transparent hover:border-primary"
+                aria-label="View image {i + 1}"
+              >
+                <img
+                  src={img}
+                  alt="{character.name} photo {i + 1}"
+                  class="w-full h-full object-cover object-top"
+                  loading="lazy"
                 />
-              </div>
+              </button>
             {/each}
+
+            <!-- Load more tile -->
+            {#if hasMore}
+              <button
+                type="button"
+                onclick={loadMore}
+                disabled={loadingMore}
+                class="shrink-0 w-[200px] h-[280px] overflow-hidden rounded-lg bg-muted border-2 border-dashed border-border hover:border-primary transition-all duration-300 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {#if loadingMore}
+                  <div class="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                  <span class="text-xs font-medium">Loading...</span>
+                {:else}
+                  <Plus class="w-8 h-8" />
+                  <span class="text-xs font-medium">Load more</span>
+                {/if}
+              </button>
+            {/if}
           </div>
         </div>
       </section>
     {/if}
 
-    <!-- Character Details Card -->
-    <section class="mb-16">
-      <div class="mb-8">
-        <h2 class="text-3xl md:text-4xl font-bold flex items-center gap-3">
-          <User class="w-8 h-8" />
-          Character Details
+    <!-- Appearances -->
+    {#if character.media?.length > 0}
+      <section>
+        <h2 class="text-2xl md:text-3xl font-bold mb-6 flex items-center gap-2">
+          <Tv class="w-6 h-6" />
+          Appearances
+          <span class="text-base font-normal text-muted-foreground">({character.media.length})</span>
         </h2>
-      </div>
-
-      <div class="bg-card rounded-xl border border-border p-6 md:p-8">
-        <div class="grid md:grid-cols-2 gap-8">
-          <div class="space-y-4">
-            <div>
-              <h3 class="font-semibold text-lg mb-2">Character Name</h3>
-              <p class="text-muted-foreground">{characterName}</p>
-            </div>
-            
-            <div>
-              <h3 class="font-semibold text-lg mb-2">Portrayed By</h3>
-              <button 
-                onclick={goToActor}
-                class="text-primary hover:text-primary/80 transition-colors"
-              >
-                {actorName}
-              </button>
-            </div>
-
-            {#if person?.known_for_department}
-              <div>
-                <h3 class="font-semibold text-lg mb-2">Actor's Department</h3>
-                <p class="text-muted-foreground">{person.known_for_department}</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {#each character.media as m}
+            <div class="group flex gap-4 p-4 rounded-2xl bg-card border border-border/60 hover:border-primary/40 hover:shadow-lg transition-all duration-300">
+              <!-- Cover -->
+              <div class="shrink-0 w-16 rounded-lg overflow-hidden shadow-md">
+                {#if m.cover}
+                  <img src={m.cover} alt={m.title} class="w-full aspect-3/4 object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                {:else}
+                  <div class="w-full aspect-3/4 bg-muted flex items-center justify-center">
+                    <Film class="w-6 h-6 text-muted-foreground/40" />
+                  </div>
+                {/if}
               </div>
-            {/if}
-          </div>
 
-          <div class="space-y-4">
-            <div>
-              <h3 class="font-semibold text-lg mb-2">Featured In</h3>
-              <button 
-                onclick={goToMedia}
-                class="text-primary hover:text-primary/80 transition-colors"
-              >
-                {mediaTitle}
-              </button>
-            </div>
+              <!-- Info -->
+              <div class="flex-1 min-w-0 flex flex-col justify-between gap-2">
+                <div>
+                  <p class="font-semibold text-sm leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                    {m.title}
+                  </p>
+                  <div class="flex items-center gap-2 mt-1 flex-wrap">
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                      {formatLabel(m.format)}
+                    </span>
+                    {#if m.year}
+                      <span class="text-xs text-muted-foreground">{m.year}</span>
+                    {/if}
+                  </div>
+                </div>
 
-            {#if mediaReleaseDate}
-              <div>
-                <h3 class="font-semibold text-lg mb-2">Release Date</h3>
-                <p class="text-muted-foreground">
-                  {new Date(mediaReleaseDate).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </p>
+                <div class="flex items-center justify-between">
+                  <!-- Genres -->
+                  {#if m.genres?.length > 0}
+                    <div class="flex gap-1 flex-wrap">
+                      {#each m.genres.slice(0, 2) as genre}
+                        <span class="text-[0.65rem] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                          {genre}
+                        </span>
+                      {/each}
+                    </div>
+                  {/if}
+
+                  <!-- Score -->
+                  {#if m.score}
+                    <div class="flex items-center gap-1 shrink-0 ml-auto">
+                      <div class="relative w-9 h-9">
+                        <svg class="w-9 h-9 -rotate-90" viewBox="0 0 36 36">
+                          <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" stroke-width="3" class="text-muted/30" />
+                          <circle
+                            cx="18" cy="18" r="15" fill="none"
+                            stroke="currentColor" stroke-width="3"
+                            stroke-dasharray="{(m.score / 100) * 94.25} 94.25"
+                            stroke-linecap="round"
+                            class="{m.score >= 75 ? 'text-green-500' : m.score >= 60 ? 'text-yellow-500' : 'text-red-500'}"
+                          />
+                        </svg>
+                        <span class="absolute inset-0 flex items-center justify-center text-[0.6rem] font-bold">
+                          {m.score}
+                        </span>
+                      </div>
+                    </div>
+                  {/if}
+                </div>
               </div>
-            {/if}
-
-            <div>
-              <h3 class="font-semibold text-lg mb-2">Media Type</h3>
-              <p class="text-muted-foreground capitalize">{mediaType}</p>
             </div>
-          </div>
+          {/each}
         </div>
-      </div>
-    </section>
+      </section>
+    {/if}
+
   </main>
 </div>
 
+<!-- Lightbox -->
+{#if lightboxOpen && gallery.length > 0}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm"
+    onclick={closeLightbox}
+  >
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="relative max-w-2xl w-full mx-4" onclick={(e) => e.stopPropagation()}>
+      <img
+        src={gallery[lightboxIndex]}
+        alt="{character.name} photo {lightboxIndex + 1}"
+        class="w-full h-auto max-h-[85vh] object-contain rounded-xl shadow-2xl"
+      />
+
+      <div class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white px-3 py-1 rounded-full text-sm">
+        {lightboxIndex + 1} / {gallery.length}
+      </div>
+
+      {#if gallery.length > 1}
+        <button onclick={prev} class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-3 rounded-full transition-all hover:scale-110" aria-label="Previous">
+          <ChevronLeft class="w-5 h-5" />
+        </button>
+        <button onclick={next} class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-3 rounded-full transition-all hover:scale-110" aria-label="Next">
+          <ChevronRight class="w-5 h-5" />
+        </button>
+      {/if}
+
+      <button onclick={closeLightbox} class="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full transition-all hover:scale-110" aria-label="Close">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  </div>
+{/if}
+
 <style>
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-    scroll-behavior: smooth;
-  }
-
-  .overflow-x-auto {
-    scroll-snap-type: x proximity;
-  }
-
-  .shrink-0 {
-    scroll-snap-align: start;
-  }
+  .aspect-3\/4 { aspect-ratio: 3/4; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 </style>

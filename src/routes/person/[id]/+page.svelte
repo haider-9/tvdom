@@ -10,13 +10,11 @@
 
   let { data }: { data: PageData } = $props();
 
-  const { person, knownFor, movieCredits, tvCredits } = data;
+  const { person, knownFor, movieCredits, tvCredits, images } = data;
 
   const profileUrl = person.profile_path
     ? `https://image.tmdb.org/t/p/w500${person.profile_path}`
     : "";
-
-  const images: any[] = [];
 
   // Use the new detailed credits data
   const displayMovieCredits = movieCredits || [];

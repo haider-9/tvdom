@@ -12,6 +12,7 @@
         User,
         ChevronDown,
         MessageSquare,
+        Clapperboard,
     } from "lucide-svelte";
     import logoUrl from "$lib/assets/logo.png";
     import { Dialog as DialogPrimitive } from "bits-ui";
@@ -78,10 +79,6 @@
                         />
                     </div>
                 </a>
-                <span
-                    class="hidden md:inline-block text-sm text-muted-foreground"
-                    >Discover movies & TV shows</span
-                >
             </div>
 
             <!-- Centered search (larger on desktop) -->
@@ -123,6 +120,14 @@
                 >
                     <Users class="w-4 h-4" />
                     <span>People</span>
+                </a>
+
+                <a
+                    href="/characters"
+                    class="text-sm text-foreground hover:text-primary transition-colors flex items-center gap-2"
+                >
+                    <Clapperboard class="w-4 h-4" />
+                    <span>Characters</span>
                 </a>
 
                 <a
@@ -361,6 +366,14 @@
                                 >
                                     <Users class="w-5 h-5" />
                                     <span>People</span>
+                                </a>
+
+                                <a
+                                    href="/characters"
+                                    class="flex items-center gap-3 p-2 rounded-md hover:bg-accent/5"
+                                >
+                                    <Clapperboard class="w-5 h-5" />
+                                    <span>Characters</span>
                                 </a>
 
                                 <a

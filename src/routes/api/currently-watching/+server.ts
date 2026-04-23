@@ -102,13 +102,16 @@ export const POST: RequestHandler = async ({ request }) => {
 			return json({ error: 'Missing required fields' }, { status: 400 });
 		}
 
+		// Ensure mediaId is always a string for Appwrite queries
+		const mediaIdStr = String(mediaId);
+
 		// Check if entry already exists
 		const existingEntries = await databases.listDocuments(
 			DATABASE_ID,
 			COLLECTIONS.CURRENTLY_WATCHING,
 			[
 				Query.equal('userId', userId),
-				Query.equal('mediaId', mediaId),
+				Query.equal('mediaId', mediaIdStr),
 				Query.limit(1)
 			]
 		);
@@ -138,7 +141,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				ID.unique(),
 				{
 					userId,
-					mediaId,
+					mediaId: mediaIdStr,
 					mediaType,
 					mediaTitle,
 					mediaPoster: mediaPoster || '',

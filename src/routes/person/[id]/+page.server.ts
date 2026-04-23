@@ -25,6 +25,11 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
       `https://api.themoviedb.org/3/person/${id}/combined_credits?api_key=${TMDB_API_KEY}`
     );
 
+    // Get person images
+    const imagesResponse = await fetch(
+      `https://api.themoviedb.org/3/person/${id}/images?api_key=${TMDB_API_KEY}`
+    );
+
     let knownFor = [];
     let movieCredits = [];
     let tvCredits = [];
@@ -62,7 +67,8 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
       person,
       knownFor,
       movieCredits,
-      tvCredits
+      tvCredits,
+      images: imagesResponse.ok ? (await imagesResponse.json()).profiles ?? [] : []
     };
   } catch (err) {
     console.error('Error loading person:', err);

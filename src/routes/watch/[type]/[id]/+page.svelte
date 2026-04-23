@@ -3,7 +3,13 @@
   import { browser } from "$app/environment";
   import { page } from "$app/stores";
   import { onMount } from "svelte";
-  import { Monitor, Grid3X3, List, Maximize, Minimize } from "lucide-svelte";
+  import {
+    Monitor,
+    Grid3X3,
+    List,
+    Maximize,
+    Minimize,
+  } from "lucide-svelte";
   import { Button } from "$lib/components/ui/button";
   import * as Card from "$lib/components/ui/card";
   import * as Tooltip from "$lib/components/ui/tooltip";
@@ -26,6 +32,7 @@
   let autoplay = $state(true);
   let videoEnded = $state(false);
   let watchingTracked = $state(false);
+  let trackingFailed = $state(false);
   let hasLoadedProgress = $state(false);
   let seasonViewMode = $state<"grid" | "list">("list");
   let episodeViewMode = $state<"grid" | "list">("list");
@@ -92,29 +99,18 @@
 
   // Track currently watching
   async function trackWatching() {
-    if (watchingTracked || !browser) return;
+    if (watchingTracked || trackingFailed || !browser) return;
 
     try {
       const userId = userStore.user?._id || userStore.user?.id;
-      if (!userId) {
-        console.log("No userId found, cannot track watching");
-        return;
-      }
-
-      console.log("Tracking watching:", {
-        userId,
-        mediaId: details.id,
-        mediaType,
-        season: selectedSeason,
-        episode: selectedEpisode,
-      });
+      if (!userId) return;
 
       const response = await fetch("/api/currently-watching", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId,
-          mediaId: details.id,
+          mediaId: String(details.id),
           mediaType,
           mediaTitle: title,
           mediaPoster: details.poster_path,
@@ -124,11 +120,16 @@
       });
 
       const result = await response.json();
-      console.log("Track watching response:", result);
+      if (!response.ok) {
+        console.error("Track watching failed:", result);
+        trackingFailed = true;
+        return;
+      }
 
       watchingTracked = true;
     } catch (error) {
       console.error("Error tracking watching:", error);
+      trackingFailed = true;
     }
   }
 
@@ -153,8 +154,7 @@
 
   // Track when player loads
   $effect(() => {
-    if (!isPlayerLoading && userStore.isAuthenticated) {
-      console.log("Player loaded, tracking watching");
+    if (!isPlayerLoading && userStore.isAuthenticated && !trackingFailed) {
       trackWatching();
     }
   });
@@ -162,10 +162,8 @@
   // Update tracking when episode changes (reset watchingTracked flag)
   $effect(() => {
     if (mediaType === "tv") {
-      console.log(
-        "Episode changed to S" + selectedSeason + "E" + selectedEpisode,
-      );
-      watchingTracked = false; // Reset flag so tracking updates
+      watchingTracked = false;
+      trackingFailed = false; // Allow retry for new episode
       if (!isPlayerLoading && userStore.isAuthenticated) {
         trackWatching();
       }
@@ -245,7 +243,7 @@
     },
     {
       id: "vidsrc2" as const,
-      name: "Server 2", 
+      name: "Server 2",
       description: "HD quality with subs",
       features: ["HD streaming", "Subtitle options"],
       getUrl: (type: string, id: string, season?: number, episode?: number) => {
@@ -384,7 +382,10 @@
   if (browser) {
     window.addEventListener("keydown", (e) => {
       if (e.key === "t" || e.key === "T") {
-        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        if (
+          e.target instanceof HTMLInputElement ||
+          e.target instanceof HTMLTextAreaElement
+        ) {
           return;
         }
         toggleTheaterMode();
@@ -401,34 +402,48 @@
   <title>Watch {title} - TVDom</title>
 </svelte:head>
 
-<div class={cn(
-  "min-h-screen bg-background transition-colors duration-300",
-  isTheaterMode && "overflow-hidden bg-black"
-)}>
+<div
+  class={cn(
+    "min-h-screen bg-background transition-colors duration-300",
+    isTheaterMode && "overflow-hidden bg-black",
+  )}
+>
   <!-- Top Bar (hidden in theater mode) -->
 
   <!-- Main Content -->
-  <main class={cn(
-    "transition-all duration-300",
-    isTheaterMode
-      ? "fixed inset-0 z-9999 flex flex-col items-center justify-center bg-black p-4"
-      : "pt-32 pb-6 sm:pt-36 sm:pb-8"
-  )}>
-    <div class={cn(
-      "transition-all duration-300 flex flex-col",
-      isTheaterMode ? "w-full h-full max-w-[95vw] max-h-[95vh]" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
-    )}>
+  <main
+    class={cn(
+      "transition-all duration-300",
+      isTheaterMode
+        ? "fixed inset-0 z-9999 flex flex-col items-center justify-center bg-black p-4"
+        : "pt-32 pb-6 sm:pt-36 sm:pb-8",
+    )}
+  >
+    <div
+      class={cn(
+        "transition-all duration-300 flex flex-col",
+        isTheaterMode
+          ? "w-full h-full max-w-[95vw] max-h-[95vh]"
+          : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+      )}
+    >
       <!-- Video Player -->
-      <div class={cn("relative", isTheaterMode ? "flex-1 w-full" : "mb-4 sm:mb-6")}>
-        <Card.Root class={cn(
-          "overflow-hidden transition-all duration-300",
-          isTheaterMode && "h-full w-full shadow-2xl"
-        )}>
+      <div
+        class={cn("relative", isTheaterMode ? "flex-1 w-full" : "mb-4 sm:mb-6")}
+      >
+        <Card.Root
+          class={cn(
+            "overflow-hidden transition-all duration-300",
+            isTheaterMode && "h-full w-full shadow-2xl",
+          )}
+        >
           <Card.Content class={cn("p-0", isTheaterMode && "h-full w-full")}>
-            <div class={cn(
-              "relative w-full",
-              isTheaterMode ? "h-full" : "aspect-video"
-            )}>
+            <div
+              class={cn(
+                "relative w-full",
+                isTheaterMode ? "h-full" : "aspect-video",
+              )}
+            >
               <iframe
                 src={getStreamUrl()}
                 class="absolute inset-0 w-full h-full"
@@ -461,8 +476,10 @@
 
       <!-- Theater Mode Controls (Below Player) -->
       {#if isTheaterMode}
-        <div class="flex items-center justify-center flex-wrap gap-4 py-4 bg-black">
-          {#if mediaType === 'tv'}
+        <div
+          class="flex items-center justify-center flex-wrap gap-4 py-4 bg-black"
+        >
+          {#if mediaType === "tv"}
             <Button
               variant="outline"
               size="sm"
@@ -470,8 +487,18 @@
               disabled={selectedSeason === 1 && selectedEpisode === 1}
               class="bg-zinc-900 border-zinc-700 text-white hover:bg-zinc-800 hover:text-white"
             >
-              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+              <svg
+                class="w-4 h-4 mr-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
               Previous
             </Button>
@@ -486,15 +513,28 @@
               class="bg-zinc-900 border-zinc-700 text-white hover:bg-zinc-800 hover:text-white"
             >
               Next
-              <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              <svg
+                class="w-4 h-4 ml-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </Button>
           {/if}
           <Button
             variant="outline"
             size="sm"
-            onclick={() => { isTheaterMode = false; document.body.style.overflow = ""; }}
+            onclick={() => {
+              isTheaterMode = false;
+              document.body.style.overflow = "";
+            }}
             class="bg-zinc-900 border-zinc-700 text-white hover:bg-zinc-800 hover:text-white gap-2"
           >
             <Minimize class="w-4 h-4" />
@@ -523,7 +563,9 @@
                 {#each streamingServers as server}
                   <div class="relative">
                     <Button
-                      variant={selectedServer === server.id ? "default" : "outline"}
+                      variant={selectedServer === server.id
+                        ? "default"
+                        : "outline"}
                       onclick={() => handleServerChange(server.id)}
                       class="w-full h-auto p-4 flex flex-col items-start gap-2"
                     >
@@ -533,10 +575,14 @@
                           <div class="w-2 h-2 bg-green-500 rounded-full"></div>
                         {/if}
                       </div>
-                      <p class="text-xs text-muted-foreground text-left">{server.description}</p>
+                      <p class="text-xs text-muted-foreground text-left">
+                        {server.description}
+                      </p>
                       <div class="flex flex-wrap gap-1 w-full">
                         {#each server.features as feature}
-                          <span class="text-xs px-2 py-0.5 bg-muted rounded-full">
+                          <span
+                            class="text-xs px-2 py-0.5 bg-muted rounded-full"
+                          >
                             {feature}
                           </span>
                         {/each}
@@ -544,14 +590,6 @@
                     </Button>
                   </div>
                 {/each}
-              </div>
-              
-              <!-- Language/Subtitle Info -->
-              <div class="p-3 bg-muted/50 rounded-lg">
-                <p class="text-xs text-muted-foreground">
-                  <strong>Note:</strong> Subtitle and audio language options are available within the video player. 
-                  Different servers may offer different language selections and quality options.
-                </p>
               </div>
             </div>
           </Card.Content>
@@ -675,7 +713,8 @@
                         class={cn(
                           "flex items-center gap-3 py-2 px-3 rounded-md bg-transparent cursor-pointer border border-border transition-all duration-200 text-sm text-left hover:bg-accent",
                           {
-                            "bg-primary hover:bg-primary/90 text-primary-foreground": selectedSeason === season.season_number,
+                            "bg-primary hover:bg-primary/90 text-primary-foreground":
+                              selectedSeason === season.season_number,
                             "season-list-item": true,
                           },
                         )}
@@ -756,7 +795,8 @@
                         class={cn(
                           "flex items-center gap-3 py-2 px-3 rounded-md border bg-transparent cursor-pointer transition-all duration-200 text-sm text-left hover:bg-accent",
                           {
-                            "bg-primary hover:bg-primary/90 text-primary-foreground": selectedEpisode === i + 1,
+                            "bg-primary hover:bg-primary/90 text-primary-foreground":
+                              selectedEpisode === i + 1,
                             "episode-list-item": true,
                           },
                         )}
