@@ -18,6 +18,7 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
 }
 
 export interface Notification {
+  $createdAt: Date;
   id: string;
   userId: string;
   type: "follow" | "unfollow" | "rating" | "review" | "system" | "api_change";

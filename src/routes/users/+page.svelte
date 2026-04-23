@@ -112,7 +112,7 @@
       {#if data.users.length > 0}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {#each data.users as user}
-            <Card.Root class="overflow-hidden group relative">
+            <Card.Root class="overflow-hidden pt-8 group relative">
               <!-- Full Card Banner Background -->
               <div class="absolute inset-0">
                 {#if user.banner}
@@ -138,7 +138,7 @@
               {/if}
 
               <Card.Content class="p-4 relative z-10">
-                <div class="flex flex-col items-center text-center space-y-3">
+                <div class="grid grid-cols-[auto_1fr] gap-3 items-start mb-3">
                   <!-- Avatar -->
                   <div class="relative">
                     {#if user.avatar}
@@ -157,36 +157,38 @@
                   </div>
 
                   <!-- User info -->
-                  <div class="space-y-1">
-                    <h3 class="font-semibold text-base text-white drop-shadow-lg">{user.displayName}</h3>
-                    <p class="text-xs text-white/80 drop-shadow">@{user.username}</p>
+                  <div class="space-y-1 min-w-0">
+                    <h3 class="font-semibold text-base text-white drop-shadow-lg truncate">{user.displayName}</h3>
+                    <p class="text-xs text-white/80 drop-shadow truncate">@{user.username}</p>
                     
-                    {#if user.bio}
-                      <p class="text-xs text-white/70 line-clamp-2 drop-shadow">{user.bio}</p>
-                    {/if}
+                    <!-- Stats -->
+                    <div class="flex items-center gap-3 text-xs text-white/80">
+                      <div class="flex items-center gap-1">
+                        <Star class="w-3 h-3" />
+                        <span>{user.totalRatings}</span>
+                      </div>
+                      <div class="flex items-center gap-1">
+                        <Users class="w-3 h-3" />
+                        <span>{user.followerCount}</span>
+                      </div>
+                    </div>
                   </div>
+                </div>
 
-                  <!-- Stats -->
-                  <div class="flex items-center gap-3 text-xs text-white/80">
-                    <div class="flex items-center gap-1">
-                      <Star class="w-3 h-3" />
-                      <span>{user.totalRatings}</span>
-                    </div>
-                    <div class="flex items-center gap-1">
-                      <Users class="w-3 h-3" />
-                      <span>{user.followerCount}</span>
-                    </div>
-                  </div>
+                <div class="space-y-3">
+                  {#if user.bio}
+                    <p class="text-xs text-white/70 line-clamp-2 drop-shadow">{user.bio}</p>
+                  {/if}
 
                   <!-- Additional info -->
                   <div class="space-y-0.5 text-xs text-white/70">
                     {#if user.location}
-                      <div class="flex items-center justify-center gap-1">
+                      <div class="flex items-center gap-1">
                         <MapPin class="w-3 h-3" />
                         <span>{user.location}</span>
                       </div>
                     {/if}
-                    <div class="flex items-center justify-center gap-1">
+                    <div class="flex items-center gap-1">
                       <Calendar class="w-3 h-3" />
                       <span>Joined {formatDate(user.joinedAt)}</span>
                     </div>
@@ -194,7 +196,7 @@
 
                   <!-- View profile button -->
                   <a href="/user/{user.username}" class="w-full">
-                    <Button variant="secondary" class="w-full h-8 text-sm bg-white/20 hover:bg-white/30 text-white border-white/30 backdrop-blur-sm transition-all">
+                    <Button variant="secondary" class="w-full h-8 text-sm user-card-button transition-all">
                       <UserIcon class="w-3 h-3 mr-2" />
                       View Profile
                     </Button>

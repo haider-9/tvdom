@@ -76,9 +76,9 @@
 
             switch (sortBy) {
                 case "added":
-                    comparison =
-                        new Date(a.addedAt).getTime() -
-                        new Date(b.addedAt).getTime();
+                    const dateA = typeof a.addedAt === 'string' ? new Date(a.addedAt) : a.addedAt;
+                    const dateB = typeof b.addedAt === 'string' ? new Date(b.addedAt) : b.addedAt;
+                    comparison = dateA.getTime() - dateB.getTime();
                     break;
                 case "title":
                     comparison = a.mediaTitle.localeCompare(b.mediaTitle);
@@ -215,12 +215,19 @@
         }
     }
 
-    function formatDate(date: Date): string {
+    function formatDate(date: Date | string): string {
+        const dateObj = typeof date === 'string' ? new Date(date) : date;
+        
+        // Check if date is valid
+        if (isNaN(dateObj.getTime())) {
+            return 'Invalid date';
+        }
+        
         return new Intl.DateTimeFormat("en-US", {
             year: "numeric",
             month: "short",
             day: "numeric",
-        }).format(date);
+        }).format(dateObj);
     }
 </script>
 
@@ -497,7 +504,7 @@
         <!-- Grid View -->
         {#if viewMode === "grid"}
             <div
-                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6"
             >
                 {#each filteredWatchlist() as item (item.id)}
                     <div

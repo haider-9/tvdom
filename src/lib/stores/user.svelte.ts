@@ -842,6 +842,56 @@ class UserStore {
   setActiveTab(tab: "profile" | "ratings" | "reviews" | "watchlist" | "collections") {
     this.#activeTab = tab;
   }
+
+  // Data export methods
+  async exportUserData(format: 'json' | 'csv' = 'json', dataType: string = 'all'): Promise<void> {
+    if (!this.isAuthenticated) {
+      throw new Error('User must be authenticated to export data');
+    }
+
+    try {
+      const userId = this.user?._id || this.user?.id;
+      const response = await fetch(`/api/export?userId=${userId}&format=${format}&type=${dataType}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to export data');
+      }
+
+      // Create download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      const filename = response.headers.get('Content-Disposition')?.split('filename=')[1]?.replace(/"/g, '') || 
+                      `tvdom-export-${new Date().toISOString().split('T')[0]}.${format}`;
+      
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting user data:', error);
+      throw error;
+    }
+  }
+
+  async exportWatchlist(format: 'json' | 'csv' = 'json'): Promise<void> {
+    return this.exportUserData(format, 'watchlist');
+  }
+
+  async exportRatings(format: 'json' | 'csv' = 'json'): Promise<void> {
+    return this.exportUserData(format, 'ratings');
+  }
+
+  async exportPersonRatings(format: 'json' | 'csv' = 'json'): Promise<void> {
+    return this.exportUserData(format, 'person-ratings');
+  }
+
+  async exportAllData(format: 'json' | 'csv' = 'json'): Promise<void> {
+    return this.exportUserData(format, 'all');
+  }
 }
 
 // Create and export the store instance

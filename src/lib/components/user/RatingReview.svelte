@@ -213,21 +213,21 @@
 	}
 </script>
 
-<div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6">
+<div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-4 sm:p-6">
 	<!-- Header -->
-	<div class="flex items-start gap-4 mb-6">
+	<div class="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-6">
 		{#if mediaPoster}
 			<img
 				src={mediaPoster}
 				alt="{mediaTitle} poster"
-				class="w-16 h-24 object-cover rounded-lg shadow-md"
+				class="w-12 h-18 sm:w-16 sm:h-24 object-cover rounded-lg shadow-md flex-shrink-0"
 			/>
 		{/if}
-		<div class="flex-1">
-			<h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+		<div class="flex-1 min-w-0">
+			<h3 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2 line-clamp-2">
 				{mediaTitle}
 			</h3>
-			<div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+			<div class="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
 				<span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">
 					{mediaType === 'movie' ? 'Movie' : 'TV Show'}
 				</span>
@@ -237,21 +237,21 @@
 
 	<!-- Existing Rating Display -->
 	{#if hasUserRated && !isReviewing}
-		<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6">
+		<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
 			<div class="flex items-center justify-between mb-3">
-				<div class="flex items-center gap-3">
+				<div class="flex items-center gap-2 sm:gap-3 flex-wrap">
 					<div class="flex items-center gap-1">
 						{#each Array(10) as _, i}
 							<Star
-								class="w-5 h-5 {i < existingRating!.rating ? getStarColor(i + 1) : 'text-gray-300 dark:text-gray-600'}"
+								class="w-4 h-4 sm:w-5 sm:h-5 {i < existingRating!.rating ? getStarColor(i + 1) : 'text-gray-300 dark:text-gray-600'}"
 								fill={i < existingRating!.rating ? 'currentColor' : 'none'}
 							/>
 						{/each}
 					</div>
-					<span class="text-lg font-bold text-gray-900 dark:text-white">
+					<span class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
 						{existingRating!.rating}/10
 					</span>
-					<span class="text-sm text-gray-600 dark:text-gray-400">
+					<span class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 hidden sm:inline">
 						{ratingLabels[existingRating!.rating as keyof typeof ratingLabels]}
 					</span>
 				</div>
@@ -343,17 +343,17 @@
 					{hasUserRated ? 'Update your rating' : 'Rate this ' + mediaType}
 				</h4>
 
-				<div class="flex justify-center gap-1 mb-3">
+				<div class="flex justify-center gap-0.5 sm:gap-1 mb-3">
 					{#each Array(10) as _, i}
 						<button
 							onmouseenter={() => handleStarHover(i + 1)}
 							onmouseleave={handleStarLeave}
 							onclick={() => handleStarClick(i + 1)}
-							class="transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+							class="transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-1"
 							disabled={isSubmitting}
 						>
 							<Star
-								class="w-8 h-8 {getStarColor(i + 1)} transition-colors"
+								class="w-6 h-6 sm:w-8 sm:h-8 {getStarColor(i + 1)} transition-colors"
 								fill={(hoverRating || selectedRating) > i ? 'currentColor' : 'none'}
 							/>
 						</button>
@@ -389,7 +389,7 @@
 					</div>
 
 					<!-- Options -->
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+					<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
 						<!-- Spoiler Warning -->
 						<label class="flex items-center gap-3 cursor-pointer">
 							<input
@@ -492,11 +492,11 @@
 					</div>
 
 					<!-- Action Buttons -->
-					<div class="flex gap-3 pt-4">
+					<div class="flex flex-col sm:flex-row gap-3 pt-4">
 						<button
 							onclick={submitReview}
 							disabled={!canSubmit || isSubmitting}
-							class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+							class="flex-1 px-4 sm:px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
 						>
 							{#if isSubmitting}
 								<div class="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
@@ -509,7 +509,7 @@
 						{#if hasUserRated}
 							<button
 								onclick={cancelReview}
-								class="px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors"
+								class="px-4 sm:px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors"
 							>
 								Cancel
 							</button>

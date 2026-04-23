@@ -12,7 +12,6 @@
         Clock,
     } from "lucide-svelte";
     import { notificationStore } from "$lib/stores/notification.svelte.js";
-    import { userStore } from "$lib/stores/user.svelte";
     import { onMount } from "svelte";
     // Simple time formatting function
     function formatDistanceToNow(
@@ -313,7 +312,7 @@
                                                     class="text-xs text-muted-foreground"
                                                 >
                                                     {formatDistanceToNow(
-                                                        notification.createdAt,
+                                                        notification.$createdAt,
                                                         { addSuffix: true },
                                                     )}
                                                 </time>

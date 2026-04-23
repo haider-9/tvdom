@@ -649,7 +649,7 @@
                                                     class="text-xs text-muted-foreground"
                                                 >
                                                     {rating.rating}/10 • {new Date(
-                                                        rating.createdAt,
+                                                        rating.$createdAt,
                                                     ).toLocaleDateString()}
                                                 </p>
                                             </div>
@@ -912,7 +912,7 @@
                                                     class="text-sm text-muted-foreground"
                                                 >
                                                     {new Date(
-                                                        rating.createdAt,
+                                                        rating.$createdAt,
                                                     ).toLocaleDateString()}
                                                 </span>
                                             </div>
@@ -1066,7 +1066,7 @@
                                                     class="text-xs text-muted-foreground"
                                                 >
                                                     Rated {new Date(
-                                                        rating.createdAt,
+                                                        rating.$createdAt,
                                                     ).toLocaleDateString()}
                                                 </p>
                                             </div>

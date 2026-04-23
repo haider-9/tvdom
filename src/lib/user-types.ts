@@ -48,6 +48,7 @@ export interface UserProfile extends User {
 }
 
 export interface Rating {
+  $createdAt: string | number | Date;
   id: string;
   userId: string;
   mediaId: string;

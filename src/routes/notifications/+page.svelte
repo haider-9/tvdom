@@ -424,7 +424,7 @@
                                             class="text-xs text-muted-foreground"
                                         >
                                             {formatDistanceToNow(
-                                                notification.createdAt,
+                                                notification.$createdAt,
                                                 { addSuffix: true },
                                             )}
                                         </time>

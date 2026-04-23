@@ -234,6 +234,8 @@
     {
       id: "vidsrc" as const,
       name: "Server 1",
+      description: "Multi-language subtitles",
+      features: ["Auto-subtitles", "Multiple languages"],
       getUrl: (type: string, id: string, season?: number, episode?: number) => {
         if (type === "tv" && season && episode) {
           return `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`;
@@ -243,7 +245,9 @@
     },
     {
       id: "vidsrc2" as const,
-      name: "Server 2",
+      name: "Server 2", 
+      description: "HD quality with subs",
+      features: ["HD streaming", "Subtitle options"],
       getUrl: (type: string, id: string, season?: number, episode?: number) => {
         if (type === "tv" && season && episode) {
           return `https://vidsrc.xyz/embed/tv/${id}/${season}/${episode}`;
@@ -254,6 +258,8 @@
     {
       id: "superembed" as const,
       name: "Server 3",
+      description: "Multi-audio & subtitles",
+      features: ["Multiple audio tracks", "Subtitle selection", "Dub options"],
       getUrl: (type: string, id: string, season?: number, episode?: number) => {
         if (type === "tv" && season && episode) {
           return `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
@@ -264,6 +270,8 @@
     {
       id: "autoembed" as const,
       name: "Server 4",
+      description: "Auto-detect language",
+      features: ["Auto language detection", "Regional content"],
       getUrl: (type: string, id: string, season?: number, episode?: number) => {
         if (type === "tv" && season && episode) {
           return `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}`;
@@ -508,18 +516,43 @@
             </Card.Title>
           </Card.Header>
           <Card.Content>
-            <div
-              class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2"
-            >
-              {#each streamingServers as server}
-                <Button
-                  variant={selectedServer === server.id ? "default" : "outline"}
-                  onclick={() => handleServerChange(server.id)}
-                  class="w-full"
-                >
-                  {server.name}
-                </Button>
-              {/each}
+            <div class="space-y-4">
+              <div
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3"
+              >
+                {#each streamingServers as server}
+                  <div class="relative">
+                    <Button
+                      variant={selectedServer === server.id ? "default" : "outline"}
+                      onclick={() => handleServerChange(server.id)}
+                      class="w-full h-auto p-4 flex flex-col items-start gap-2"
+                    >
+                      <div class="flex items-center justify-between w-full">
+                        <span class="font-semibold">{server.name}</span>
+                        {#if selectedServer === server.id}
+                          <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                        {/if}
+                      </div>
+                      <p class="text-xs text-muted-foreground text-left">{server.description}</p>
+                      <div class="flex flex-wrap gap-1 w-full">
+                        {#each server.features as feature}
+                          <span class="text-xs px-2 py-0.5 bg-muted rounded-full">
+                            {feature}
+                          </span>
+                        {/each}
+                      </div>
+                    </Button>
+                  </div>
+                {/each}
+              </div>
+              
+              <!-- Language/Subtitle Info -->
+              <div class="p-3 bg-muted/50 rounded-lg">
+                <p class="text-xs text-muted-foreground">
+                  <strong>Note:</strong> Subtitle and audio language options are available within the video player. 
+                  Different servers may offer different language selections and quality options.
+                </p>
+              </div>
             </div>
           </Card.Content>
         </Card.Root>
