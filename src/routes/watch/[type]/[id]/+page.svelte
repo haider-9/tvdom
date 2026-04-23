@@ -152,21 +152,23 @@
     }
   }
 
-  // Track when player loads
+  // Update tracking when episode changes (reset watchingTracked flag)
   $effect(() => {
-    if (!isPlayerLoading && userStore.isAuthenticated && !trackingFailed) {
-      trackWatching();
+    // Explicitly read season/episode to depend on them
+    const _season = selectedSeason;
+    const _episode = selectedEpisode;
+    if (mediaType === "tv") {
+      watchingTracked = false;
+      trackingFailed = false;
     }
   });
 
-  // Update tracking when episode changes (reset watchingTracked flag)
+  // Trigger tracking when player finishes loading.
+  // Reading watchingTracked/trackingFailed here would cause a loop because
+  // trackWatching() mutates them — so we check them inside the function only.
   $effect(() => {
-    if (mediaType === "tv") {
-      watchingTracked = false;
-      trackingFailed = false; // Allow retry for new episode
-      if (!isPlayerLoading && userStore.isAuthenticated) {
-        trackWatching();
-      }
+    if (!isPlayerLoading && userStore.isAuthenticated) {
+      trackWatching();
     }
   });
 
