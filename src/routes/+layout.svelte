@@ -13,42 +13,56 @@
     import UserProfile from "$lib/components/user/UserProfile.svelte";
     import { userStore } from "$lib/stores/user.svelte";
 
-    // Initialize theme store - this ensures it's loaded on every page
+    // Initialize theme store
     import { themeStore } from "$lib/stores/theme.svelte.js";
 
     let { children } = $props();
-
-    // Theme is now handled automatically by the theme store
-    // No manual initialization needed in layout
 </script>
 
 <svelte:head>
+    <title>TVDom | Discover Movies, TV Shows & Celebrities</title>
+    <meta name="description" content="Discover and explore movies, TV shows, and the people who make them. Browse trending content, read reviews, and find your next favorite watch powered by TMDB." />
+    <meta name="keywords" content="movies, TV shows, celebrities, TMDB, entertainment, streaming, reviews, watchlist, movie database, TV database, actors, directors, film" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tvdom.vercel.app/" />
+    <meta property="og:title" content="TVDom | Discover Movies, TV Shows & Celebrities" />
+    <meta property="og:description" content="Discover and explore movies, TV shows, and the people who make them. Browse trending content and find your next favorite watch." />
+    <meta property="og:image" content="https://tvdom.vercel.app/og-image.png" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://tvdom.vercel.app/" />
+    <meta property="twitter:title" content="TVDom | Discover Movies, TV Shows & Celebrities" />
+    <meta property="twitter:description" content="Discover and explore movies, TV shows, and the people who make them." />
+    <meta property="twitter:image" content="https://tvdom.vercel.app/og-image.png" />
+    
+    <!-- Additional Meta Tags -->
+    <meta name="author" content="Haider Ahmad" />
+    <meta name="robots" content="index, follow" />
+    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="theme-color" content="#1a1a2e" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://tvdom.vercel.app/" />
+    
     <link rel="icon" href={favicon} />
+    <link rel="manifest" href="/site.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+    <link rel="preconnect" href="https://api.themoviedb.org" />
+    <link rel="dns-prefetch" href="https://api.themoviedb.org" />
+    <link rel="dns-prefetch" href="https://image.tmdb.org" />
     <link
-        rel="preconnect"
-        href="https://fonts.gstatic.com"
-        crossorigin="anonymous"
-    />
-    <link
-        href="https://fonts.googleapis.com/css2
-      ?family=Montserrat:wght@300;400;500;600;700
-      &family=Fira+Code:wght@400;500
-      &family=Oxanium:wght@400;500;600;700
-      &family=Source+Code+Pro:wght@400;500;600
-      &family=Poppins:wght@400;500;600;700
-      &family=Outfit:wght@400;500;600;700
-      &family=Plus+Jakarta+Sans:wght@400;500;600;700
-      &family=Roboto+Mono:wght@400;500;600
-      &family=Lora:wght@400;500;600;700
-      &display=swap"
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&family=Oxanium:wght@400;500;600;700&family=Source+Code+Pro:wght@400;500;600&family=Poppins:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600&family=Lora:wght@400;500;600;700&display=swap"
         rel="stylesheet"
     />
 </svelte:head>
 
 <Toaster richColors position="top-right" />
 
-<!-- User Navigation (replaces original Navbar for user features) -->
 <Navbar />
 
 <!-- Authentication Modals -->
