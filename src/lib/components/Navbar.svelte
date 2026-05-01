@@ -309,9 +309,9 @@
                         />
 
                         <DialogPrimitive.Content
-                            class="sheet-content fixed left-0 top-0 w-full max-h-[70vh] bg-background p-4 shadow-lg rounded-b-lg z-[70]"
+                            class="sheet-content fixed left-0 top-0 w-full max-h-[85vh] bg-background shadow-lg rounded-b-lg z-[70] flex flex-col"
                         >
-                            <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
                                 <div class="flex items-center gap-3">
                                     <div
                                         class="rounded-md p-1 bg-primary/10 overflow-hidden"
@@ -331,21 +331,22 @@
                                 </DialogPrimitive.Close>
                             </div>
 
-                            <form onsubmit={handleSearch} class="mb-4">
-                                <div class="relative">
-                                    <Search
-                                        class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none"
-                                    />
-                                    <Input
-                                        type="text"
-                                        bind:value={searchQuery}
-                                        placeholder="Search..."
-                                        class="pl-10 pr-4"
-                                    />
-                                </div>
-                            </form>
+                            <div class="flex-1 overflow-y-auto p-4">
+                                <form onsubmit={handleSearch} class="mb-4">
+                                    <div class="relative">
+                                        <Search
+                                            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none"
+                                        />
+                                        <Input
+                                            type="text"
+                                            bind:value={searchQuery}
+                                            placeholder="Search..."
+                                            class="pl-10 pr-4"
+                                        />
+                                    </div>
+                                </form>
 
-                            <nav class="flex flex-col gap-2">
+                                <nav class="flex flex-col gap-2">
                                 <a
                                     href="/movies"
                                     class="flex items-center gap-3 p-2 rounded-md hover:bg-accent/5"
@@ -463,14 +464,17 @@
                                         </a>
                                     {/if}
                                 </div>
+                                </nav>
+                            </div>
 
+                            <div class="flex-shrink-0 border-t border-border p-4">
                                 <div
-                                    class="flex items-center gap-3 p-2 border-t border-border mt-2 pt-2"
+                                    class="flex items-center gap-3 p-2"
                                 >
                                     <ThemeToggle />
                                     <span>Theme</span>
                                 </div>
-                            </nav>
+                            </div>
                         </DialogPrimitive.Content>
                     </DialogPrimitive.Portal>
                 </DialogPrimitive.Root>
