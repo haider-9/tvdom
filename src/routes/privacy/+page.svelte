@@ -4,6 +4,15 @@
 
 <svelte:head>
     <title>Privacy Policy - TVDom</title>
+    <meta name="description" content="TVDom's privacy policy — learn how we collect, use, and protect your data when you use our movie and TV show discovery platform." />
+    <meta property="og:title" content="Privacy Policy - TVDom" />
+    <meta property="og:description" content="Learn how TVDom collects, uses, and protects your data." />
+    <meta property="og:url" content="https://tvdom.vercel.app/privacy" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Privacy Policy - TVDom" />
+    <meta name="twitter:description" content="Learn how TVDom collects, uses, and protects your data." />
+    <link rel="canonical" href="https://tvdom.vercel.app/privacy" />
 </svelte:head>
 
 <div class="privacy-page">

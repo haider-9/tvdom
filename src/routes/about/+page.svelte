@@ -1,300 +1,187 @@
 <script lang="ts">
-    import { Film, Users, Star, Heart, Github } from "lucide-svelte";
+    import {
+        Film,
+        Tv,
+        Star,
+        Heart,
+        Users,
+        MessageSquare,
+        Clapperboard,
+        Globe,
+        Github,
+        ExternalLink,
+        Database,
+        Bookmark,
+        Search,
+    } from "lucide-svelte";
+    import { Badge } from "$lib/components/ui/badge";
+    import { Button } from "$lib/components/ui/button";
 
     const githubUser = "haider-9";
     const avatar = `https://github.com/${githubUser}.png`;
+
+    const features = [
+        { icon: Film,          title: "Movies",      desc: "Browse trending, popular, and top-rated films from every genre." },
+        { icon: Tv,            title: "TV Shows",     desc: "Follow series, see episode guides, and track what you're watching." },
+        { icon: Star,          title: "Ratings",      desc: "Rate and review titles. See what the community thinks before you watch." },
+        { icon: Bookmark,      title: "Watchlist",    desc: "Save titles to your personal watchlist and mark them as watched." },
+        { icon: Users,         title: "People",       desc: "Explore actor and director profiles, filmographies, and career highlights." },
+        { icon: Clapperboard,  title: "Characters",   desc: "Browse iconic anime and manga characters sorted by popularity." },
+        { icon: MessageSquare, title: "Community",    desc: "Post, comment, and connect with other entertainment fans." },
+        { icon: Search,        title: "Search",       desc: "Find any movie, show, or person instantly across the full TMDB database." },
+    ];
+
+    const techStack = [
+        { name: "SvelteKit",    color: "bg-orange-500/10 text-orange-500 border-orange-500/20" },
+        { name: "Svelte 5",     color: "bg-orange-400/10 text-orange-400 border-orange-400/20" },
+        { name: "TypeScript",   color: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
+        { name: "Tailwind v4",  color: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20" },
+        { name: "Appwrite",     color: "bg-pink-500/10 text-pink-500 border-pink-500/20" },
+        { name: "TMDB API",     color: "bg-green-500/10 text-green-500 border-green-500/20" },
+        { name: "Cloudinary",   color: "bg-purple-500/10 text-purple-500 border-purple-500/20" },
+        { name: "Vercel",       color: "bg-gray-500/10 text-gray-400 border-gray-500/20" },
+    ];
 </script>
 
 <svelte:head>
     <title>About - TVDom</title>
+    <meta name="description" content="TVDom is a free platform for discovering, tracking, and discussing movies, TV shows, and the people who make them. Powered by TMDB." />
+    <meta property="og:title" content="About - TVDom" />
+    <meta property="og:description" content="Learn about TVDom — a free platform for discovering, tracking, and discussing movies, TV shows, and the people who make them." />
+    <meta property="og:url" content="https://tvdom.vercel.app/about" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="About - TVDom" />
+    <meta name="twitter:description" content="Learn about TVDom — a free platform for discovering, tracking, and discussing movies and TV shows." />
+    <link rel="canonical" href="https://tvdom.vercel.app/about" />
 </svelte:head>
 
-<div class="about-page">
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <div class="icon-wrapper">
-                <Film class="w-12 h-12" />
-            </div>
-            <h1>About TVDom</h1>
-            <p class="tagline">Your personal movie and TV show companion</p>
-        </div>
+<div class="min-h-screen">
+    <main class="container mx-auto px-4 md:px-8 py-10 md:py-14 space-y-16">
 
-        <!-- What is TVDom -->
-        <section class="section">
-            <h2>What is TVDom?</h2>
-            <p>
-                TVDom is a platform for discovering, tracking, and sharing your favorite movies and TV shows. 
-                Keep track of what you've watched, create watchlists, rate content, and connect with other enthusiasts.
+        <!-- Page header — same pattern as /movies, /people -->
+        <section class="space-y-2">
+            <div class="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                <Film class="w-4 h-4" />
+                <span>About TVDom</span>
+            </div>
+            <h1 class="text-3xl md:text-4xl font-semibold tracking-tight text-foreground">
+                What is TVDom?
+            </h1>
+            <p class="max-w-2xl text-sm md:text-base text-muted-foreground">
+                A free platform for discovering movies, TV shows, anime characters, and the people who make them.
+                Built by a solo developer, powered by TMDB.
             </p>
         </section>
 
-        <!-- Features -->
-        <section class="section">
-            <h2>Features</h2>
-            <div class="features-grid">
-                <div class="feature">
-                    <Film class="feature-icon" />
-                    <h3>Discover</h3>
-                    <p>Browse trending movies and TV shows</p>
-                </div>
-                <div class="feature">
-                    <Heart class="feature-icon" />
-                    <h3>Track</h3>
-                    <p>Manage your watchlist and viewing history</p>
-                </div>
-                <div class="feature">
-                    <Star class="feature-icon" />
-                    <h3>Rate</h3>
-                    <p>Rate and review what you watch</p>
-                </div>
-                <div class="feature">
-                    <Users class="feature-icon" />
-                    <h3>Connect</h3>
-                    <p>Follow friends and see what they're watching</p>
-                </div>
+        <!-- Features grid -->
+        <section class="space-y-6">
+            <h2 class="text-xl font-semibold text-foreground">What you can do</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {#each features as f}
+                    <div class="rounded-lg border border-border bg-card p-5 space-y-2 hover:border-primary/40 transition-colors">
+                        <div class="flex items-center gap-2 text-primary">
+                            <f.icon class="w-4 h-4" />
+                            <span class="text-sm font-semibold text-foreground">{f.title}</span>
+                        </div>
+                        <p class="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+                    </div>
+                {/each}
             </div>
         </section>
 
         <!-- Developer -->
-        <section class="section">
-            <h2>Developer</h2>
-            <div class="developer-card">
-                <img src={avatar} alt="Haider" class="avatar" />
-                <div class="developer-info">
-                    <h3>Haider</h3>
-                    <p>
-                        Built TVDom as a personal project to explore modern web technologies 
-                        and create something useful for movie and TV show fans.
+        <section class="space-y-6">
+            <h2 class="text-xl font-semibold text-foreground">The developer</h2>
+
+            <div class="flex flex-col sm:flex-row gap-6 items-start">
+                <img
+                    src={avatar}
+                    alt="Haider Ahmad"
+                    class="w-20 h-20 rounded-full border-2 border-border object-cover flex-shrink-0"
+                />
+                <div class="space-y-3">
+                    <div>
+                        <p class="font-semibold text-foreground">Haider Ahmad</p>
+                        <p class="text-sm text-muted-foreground">@{githubUser}</p>
+                    </div>
+                    <p class="text-sm text-muted-foreground leading-relaxed max-w-xl">
+                        Built TVDom as a personal project to explore SvelteKit, Svelte 5 runes, Tailwind CSS v4,
+                        and Appwrite — while making something actually useful for movie and TV fans.
                     </p>
-                    <a 
-                        href="https://github.com/{githubUser}" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        class="github-link"
-                    >
-                        <Github class="w-4 h-4" />
-                        View on GitHub
-                    </a>
+                    <div class="flex flex-wrap gap-3">
+                        <Button
+                            href="https://github.com/{githubUser}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            variant="outline"
+                            class="gap-2 h-8 text-xs"
+                        >
+                            <Github class="w-3.5 h-3.5" />
+                            GitHub
+                        </Button>
+                        <Button
+                            href="https://github.com/{githubUser}/tvdom"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            variant="outline"
+                            class="gap-2 h-8 text-xs"
+                        >
+                            <ExternalLink class="w-3.5 h-3.5" />
+                            Source code
+                        </Button>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Tech Stack -->
-        <section class="section">
-            <h2>Built With</h2>
-            <div class="tech-list">
-                <span class="tech-tag">SvelteKit</span>
-                <span class="tech-tag">TypeScript</span>
-                <span class="tech-tag">MongoDB</span>
-                <span class="tech-tag">Tailwind CSS</span>
-                <span class="tech-tag">TMDB API</span>
+        <!-- Tech stack -->
+        <section class="space-y-4">
+            <h2 class="text-xl font-semibold text-foreground">Built with</h2>
+            <div class="flex flex-wrap gap-2">
+                {#each techStack as tech}
+                    <Badge variant="outline" class="px-3 py-1 text-xs font-medium {tech.color}">
+                        {tech.name}
+                    </Badge>
+                {/each}
             </div>
         </section>
 
-        <!-- Data Source -->
-        <section class="section">
-            <h2>Data Source</h2>
-            <p>
-                Movie and TV show data is provided by 
-                <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer" class="link">
-                    The Movie Database (TMDB)
-                </a>. 
-                This product uses the TMDB API but is not endorsed or certified by TMDB.
-            </p>
+        <!-- TMDB attribution -->
+        <section class="rounded-lg border border-border bg-card p-5">
+            <div class="flex items-start gap-3">
+                <Database class="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                <div class="space-y-1">
+                    <p class="text-sm font-medium text-foreground">Powered by TMDB</p>
+                    <p class="text-xs text-muted-foreground leading-relaxed">
+                        All movie and TV show data — titles, posters, cast, crew, and ratings — is provided by
+                        <a
+                            href="https://www.themoviedb.org/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="text-primary hover:underline"
+                        >The Movie Database (TMDB)</a>.
+                        This product uses the TMDB API but is not endorsed or certified by TMDB.
+                    </p>
+                </div>
+            </div>
         </section>
-    </div>
+
+        <!-- CTA -->
+        <section class="flex flex-wrap gap-3 pb-4">
+            <Button href="/movies" class="gap-2">
+                <Film class="w-4 h-4" />
+                Browse Movies
+            </Button>
+            <Button href="/tv" variant="outline" class="gap-2">
+                <Tv class="w-4 h-4" />
+                Browse TV Shows
+            </Button>
+            <Button href="/signup" variant="outline" class="gap-2">
+                <Heart class="w-4 h-4" />
+                Create account
+            </Button>
+        </section>
+
+    </main>
 </div>
-
-<style>
-    .about-page {
-        min-height: 100vh;
-        padding: 4rem 0;
-    }
-
-    .container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 0 1.5rem;
-    }
-
-    .header {
-        text-align: center;
-        margin-bottom: 4rem;
-    }
-
-    .icon-wrapper {
-        display: inline-flex;
-        padding: 1rem;
-        background: hsl(var(--primary) / 0.1);
-        border-radius: 1rem;
-        color: hsl(var(--primary));
-        margin-bottom: 1.5rem;
-    }
-
-    h1 {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: hsl(var(--foreground));
-        margin-bottom: 0.75rem;
-    }
-
-    .tagline {
-        font-size: 1.125rem;
-        color: hsl(var(--muted-foreground));
-    }
-
-    .section {
-        margin-bottom: 3rem;
-    }
-
-    h2 {
-        font-size: 1.75rem;
-        font-weight: 600;
-        color: hsl(var(--foreground));
-        margin-bottom: 1rem;
-    }
-
-    p {
-        font-size: 1rem;
-        line-height: 1.7;
-        color: hsl(var(--muted-foreground));
-    }
-
-    .features-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.5rem;
-        margin-top: 1.5rem;
-    }
-
-    .feature {
-        padding: 1.5rem;
-        background: hsl(var(--card));
-        border: 1px solid hsl(var(--border));
-        border-radius: 0.75rem;
-        text-align: center;
-    }
-
-    .feature-icon {
-        width: 2rem;
-        height: 2rem;
-        color: hsl(var(--primary));
-        margin: 0 auto 1rem;
-    }
-
-    .feature h3 {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: hsl(var(--foreground));
-        margin-bottom: 0.5rem;
-    }
-
-    .feature p {
-        font-size: 0.875rem;
-        color: hsl(var(--muted-foreground));
-    }
-
-    .developer-card {
-        display: flex;
-        gap: 1.5rem;
-        padding: 2rem;
-        background: hsl(var(--card));
-        border: 1px solid hsl(var(--border));
-        border-radius: 0.75rem;
-        margin-top: 1.5rem;
-    }
-
-    .avatar {
-        width: 5rem;
-        height: 5rem;
-        border-radius: 50%;
-        object-fit: cover;
-        flex-shrink: 0;
-    }
-
-    .developer-info {
-        flex: 1;
-    }
-
-    .developer-info h3 {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: hsl(var(--foreground));
-        margin-bottom: 0.5rem;
-    }
-
-    .developer-info p {
-        margin-bottom: 1rem;
-    }
-
-    .github-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
-        background: hsl(var(--primary));
-        color: white;
-        border-radius: 0.5rem;
-        text-decoration: none;
-        font-size: 0.875rem;
-        font-weight: 500;
-        transition: opacity 0.2s;
-    }
-
-    .github-link:hover {
-        opacity: 0.9;
-    }
-
-    .tech-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        margin-top: 1.5rem;
-    }
-
-    .tech-tag {
-        padding: 0.5rem 1rem;
-        background: hsl(var(--muted));
-        color: hsl(var(--foreground));
-        border-radius: 0.5rem;
-        font-size: 0.875rem;
-        font-weight: 500;
-    }
-
-    .link {
-        color: hsl(var(--primary));
-        text-decoration: underline;
-    }
-
-    .link:hover {
-        text-decoration: none;
-    }
-
-    @media (max-width: 640px) {
-        .about-page {
-            padding: 2rem 0;
-        }
-
-        h1 {
-            font-size: 2rem;
-        }
-
-        h2 {
-            font-size: 1.5rem;
-        }
-
-        .developer-card {
-            flex-direction: column;
-            text-align: center;
-        }
-
-        .avatar {
-            margin: 0 auto;
-        }
-
-        .features-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>

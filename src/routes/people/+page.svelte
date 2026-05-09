@@ -32,6 +32,15 @@
 
 <svelte:head>
   <title>People - TVDom</title>
+  <meta name="description" content="Discover popular actors, directors, writers, and other talented people in the entertainment industry. Explore full filmographies and career highlights." />
+  <meta property="og:title" content="People - TVDom" />
+  <meta property="og:description" content="Discover popular actors, directors, writers, and other talented people in the entertainment industry." />
+  <meta property="og:url" content="https://tvdom.vercel.app/people" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="People - TVDom" />
+  <meta name="twitter:description" content="Discover popular actors, directors, writers, and other talented people in the entertainment industry." />
+  <link rel="canonical" href="https://tvdom.vercel.app/people" />
 </svelte:head>
 
 <div class="min-h-screen bg-background">

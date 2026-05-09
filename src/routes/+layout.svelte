@@ -45,9 +45,6 @@
     <meta name="theme-color" content="#1a1a2e" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     
-    <!-- Canonical URL -->
-    <link rel="canonical" href="https://tvdom.vercel.app/" />
-    
     <link rel="icon" href={favicon} />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />

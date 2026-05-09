@@ -513,6 +513,15 @@
 
 <svelte:head>
   <title>Community - TVDom</title>
+  <meta name="description" content="Join the TVDom community. Share your thoughts on movies and TV shows, post reviews, follow friends, and connect with fellow entertainment fans." />
+  <meta property="og:title" content="Community - TVDom" />
+  <meta property="og:description" content="Join the TVDom community. Share your thoughts on movies and TV shows, post reviews, and connect with fellow entertainment fans." />
+  <meta property="og:url" content="https://tvdom.vercel.app/community" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Community - TVDom" />
+  <meta name="twitter:description" content="Join the TVDom community. Share your thoughts on movies and TV shows and connect with fellow fans." />
+  <link rel="canonical" href="https://tvdom.vercel.app/community" />
 </svelte:head>
 
 <div class="community-page">

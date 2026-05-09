@@ -46,6 +46,15 @@
 
 <svelte:head>
   <title>Users - TVDom</title>
+  <meta name="description" content="Browse and discover TVDom users. Follow other movie and TV show fans, see their watchlists, ratings, and reviews." />
+  <meta property="og:title" content="Users - TVDom" />
+  <meta property="og:description" content="Browse and discover TVDom users. Follow other movie and TV show fans." />
+  <meta property="og:url" content="https://tvdom.vercel.app/users" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Users - TVDom" />
+  <meta name="twitter:description" content="Browse and discover TVDom users. Follow other movie and TV show fans." />
+  <link rel="canonical" href="https://tvdom.vercel.app/users" />
 </svelte:head>
 
 <div class="min-h-screen bg-background">

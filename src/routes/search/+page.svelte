@@ -18,7 +18,10 @@
 </script>
 
 <svelte:head>
-	<title>Search - TVDom</title>
+	<title>{data.query ? `Search: ${data.query} - TVDom` : 'Search - TVDom'}</title>
+	<meta name="description" content={data.query ? `Search results for "${data.query}" on TVDom — movies, TV shows, and more.` : 'Search for movies, TV shows, and people on TVDom.'} />
+	<meta name="robots" content="noindex, follow" />
+	<link rel="canonical" href="https://tvdom.vercel.app/search" />
 </svelte:head>
 
 <div class="min-h-screen">

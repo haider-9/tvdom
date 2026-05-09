@@ -10,21 +10,17 @@
             rel="stylesheet"
         />
 
-        <!-- Theme initialization script - prevents flash -->
+        <!-- Theme initialization script - prevents flash of unstyled content -->
         <script>
             (function () {
                 try {
-                    // Add preload class to prevent transitions during load
                     document.documentElement.classList.add('preload');
-                    
-                    var theme =
-                        localStorage.getItem("tvdom-theme") || "bubblegum";
+
+                    var theme = localStorage.getItem("tvdom-theme") || "bubblegum";
                     var html = document.documentElement;
 
-                    // Remove existing classes
                     html.classList.remove("dark", "theme-bubblegum", "theme-cyberpunk", "theme-doom65", "theme-claymorphism");
 
-                    // Apply theme
                     if (theme === "dark") {
                         html.classList.add("dark");
                         html.setAttribute("data-theme", "dark");
@@ -44,27 +40,15 @@
                         html.setAttribute("data-theme", "light");
                     }
 
-                    console.log("Theme loaded:", theme);
-                    
-                    // Remove preload class after a short delay to enable transitions
-                    setTimeout(function() {
+                    setTimeout(function () {
                         html.classList.remove('preload');
                     }, 100);
-                } catch (error) {
-                    console.warn("Theme initialization failed:", error);
-                    // Still remove preload class even if theme loading fails
-                    setTimeout(function() {
+                } catch (e) {
+                    document.documentElement.classList.add("theme-bubblegum");
+                    document.documentElement.setAttribute("data-theme", "bubblegum");
+                    setTimeout(function () {
                         document.documentElement.classList.remove('preload');
                     }, 100);
-                }
-            })();
-                } catch (e) {
-                    // Fallback to bubblegum
-                    document.documentElement.classList.add("theme-bubblegum");
-                    document.documentElement.setAttribute(
-                        "data-theme",
-                        "bubblegum",
-                    );
                 }
             })();
         </script>
@@ -73,7 +57,7 @@
     </head>
 
     <body data-sveltekit-preload-data="hover">
-        <div style="display: contents; font-family: &quot;Fira Code&quot;">
+        <div style="display: contents">
             %sveltekit.body%
         </div>
     </body>

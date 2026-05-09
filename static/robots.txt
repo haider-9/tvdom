@@ -1,4 +1,16 @@
 User-agent: *
 Allow: /
 
+# Don't index user-specific or auth pages
+Disallow: /api/
+Disallow: /login
+Disallow: /signup
+Disallow: /profile
+Disallow: /settings
+Disallow: /notifications
+Disallow: /appwrite-test
+
+# Search results are dynamic — skip indexing
+Disallow: /search
+
 Sitemap: https://tvdom.vercel.app/sitemap.xml

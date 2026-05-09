@@ -18,6 +18,15 @@ const sectionTitle = sections.find(s => s.id === data.currentSection)?.label || 
 
 <svelte:head>
 	<title>TV Shows - TVDom</title>
+	<meta name="description" content="Browse popular, trending, top-rated, and currently airing TV shows. Find your next binge-worthy series powered by TMDB." />
+	<meta property="og:title" content="TV Shows - TVDom" />
+	<meta property="og:description" content="Browse popular, trending, top-rated, and currently airing TV shows. Find your next binge-worthy series." />
+	<meta property="og:url" content="https://tvdom.vercel.app/tv" />
+	<meta property="og:type" content="website" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content="TV Shows - TVDom" />
+	<meta name="twitter:description" content="Browse popular, trending, top-rated, and currently airing TV shows." />
+	<link rel="canonical" href="https://tvdom.vercel.app/tv" />
 </svelte:head>
 
 <div class="min-h-screen bg-background">

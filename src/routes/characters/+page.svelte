@@ -87,6 +87,15 @@
 
 <svelte:head>
   <title>{search ? `"${search}" — Characters` : 'Iconic Characters'} - TVDom</title>
+  <meta name="description" content={search ? `Anime and manga characters matching "${search}" — browse profiles, favourites, and appearances.` : 'Explore iconic anime and manga characters sorted by popularity. Browse profiles, favourites counts, and media appearances.'} />
+  <meta property="og:title" content={search ? `"${search}" — Characters - TVDom` : 'Iconic Characters - TVDom'} />
+  <meta property="og:description" content="Explore iconic anime and manga characters sorted by popularity on TVDom." />
+  <meta property="og:url" content="https://tvdom.vercel.app/characters" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Iconic Characters - TVDom" />
+  <meta name="twitter:description" content="Explore iconic anime and manga characters sorted by popularity." />
+  <link rel="canonical" href="https://tvdom.vercel.app/characters" />
 </svelte:head>
 
 <div class="min-h-screen">
