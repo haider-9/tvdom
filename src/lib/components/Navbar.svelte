@@ -130,21 +130,6 @@
                     <span>Characters</span>
                 </a>
 
-                <a
-                    href="/users"
-                    class="text-sm text-foreground hover:text-primary transition-colors flex items-center gap-2"
-                >
-                    <User class="w-4 h-4" />
-                    <span>Users</span>
-                </a>
-
-                <a
-                    href="/community"
-                    class="text-sm text-foreground hover:text-primary transition-colors flex items-center gap-2"
-                >
-                    <MessageSquare class="w-4 h-4" />
-                    <span>Community</span>
-                </a>
 
                 <!-- Auth section -->
                 {#if userStore.isAuthenticated}
@@ -257,6 +242,24 @@
                                         <span>Profile</span>
                                     </a>
 
+                                    <a
+                                        href="/users"
+                                        class="flex items-center gap-3 w-full px-3 py-2 text-left text-sm text-foreground hover:bg-accent rounded-md transition-colors"
+                                        onclick={closeDropdown}
+                                    >
+                                        <Users class="w-4 h-4" />
+                                        <span>Users</span>
+                                    </a>
+
+                                    <a
+                                        href="/community"
+                                        class="flex items-center gap-3 w-full px-3 py-2 text-left text-sm text-foreground hover:bg-accent rounded-md transition-colors"
+                                        onclick={closeDropdown}
+                                    >
+                                        <MessageSquare class="w-4 h-4" />
+                                        <span>Community</span>
+                                    </a>
+
                                     <hr class="my-2 border-border" />
 
                                     <button
@@ -272,21 +275,63 @@
                     </div>
                 {:else}
                     <!-- Not authenticated -->
-                    <div class="flex items-center gap-2 ml-4">
-                        <a
-                            href="/login"
-                            class="flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:text-primary transition-colors rounded-md hover:bg-accent/10"
+                    <div class="relative ml-4">
+                        <button
+                            onclick={() => (showUserDropdown = !showUserDropdown)}
+                            class="flex items-center gap-2 p-1 rounded-lg hover:bg-accent/10 transition-colors"
+                            aria-label="Account menu"
                         >
-                            <LogIn class="w-4 h-4" />
-                            <span>Sign In</span>
-                        </a>
-                        <a
-                            href="/signup"
-                            class="flex items-center gap-2 px-3 py-2 text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors rounded-md"
-                        >
-                            <UserPlus class="w-4 h-4" />
-                            <span>Sign Up</span>
-                        </a>
+                            <div class="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center border-2 border-border">
+                                <User class="w-4 h-4 text-muted-foreground" />
+                            </div>
+                            <ChevronDown class="w-4 h-4 text-muted-foreground" />
+                        </button>
+
+                        {#if showUserDropdown}
+                            <button
+                                class="fixed inset-0 z-[70]"
+                                onclick={closeDropdown}
+                                aria-label="Close dropdown"
+                                tabindex="-1"
+                            ></button>
+
+                            <div class="absolute right-0 top-full mt-2 w-48 bg-background border border-border rounded-lg shadow-lg py-2 z-[75]">
+                                <a
+                                    href="/users"
+                                    class="flex items-center gap-3 w-full px-4 py-2 text-left text-sm text-foreground hover:bg-accent transition-colors"
+                                    onclick={closeDropdown}
+                                >
+                                    <Users class="w-4 h-4" />
+                                    <span>Users</span>
+                                </a>
+                                <a
+                                    href="/community"
+                                    class="flex items-center gap-3 w-full px-4 py-2 text-left text-sm text-foreground hover:bg-accent transition-colors"
+                                    onclick={closeDropdown}
+                                >
+                                    <MessageSquare class="w-4 h-4" />
+                                    <span>Community</span>
+                                </a>
+                                
+                                <hr class="my-2 border-border" />
+                                <a
+                                    href="/login"
+                                    class="flex items-center gap-3 w-full px-4 py-2 text-left text-sm text-foreground hover:bg-accent transition-colors"
+                                    onclick={closeDropdown}
+                                >
+                                    <LogIn class="w-4 h-4" />
+                                    <span>Sign In</span>
+                                </a>
+                                <a
+                                    href="/signup"
+                                    class="flex items-center gap-3 w-full px-4 py-2 text-left text-sm text-foreground hover:bg-accent transition-colors"
+                                    onclick={closeDropdown}
+                                >
+                                    <UserPlus class="w-4 h-4" />
+                                    <span>Sign Up</span>
+                                </a>
+                            </div>
+                        {/if}
                     </div>
                 {/if}
 
@@ -377,21 +422,6 @@
                                     <span>Characters</span>
                                 </a>
 
-                                <a
-                                    href="/users"
-                                    class="flex items-center gap-3 p-2 rounded-md hover:bg-accent/5"
-                                >
-                                    <User class="w-5 h-5" />
-                                    <span>Users</span>
-                                </a>
-
-                                <a
-                                    href="/community"
-                                    class="flex items-center gap-3 p-2 rounded-md hover:bg-accent/5"
-                                >
-                                    <MessageSquare class="w-5 h-5" />
-                                    <span>Community</span>
-                                </a>
 
                                 <!-- Auth section -->
                                 <div class="border-t border-border mt-2 pt-2">
@@ -438,6 +468,22 @@
                                                 </p>
                                             </div>
                                         </a>
+                                        
+                                        <a
+                                            href="/users"
+                                            class="flex items-center gap-3 p-2 rounded-md hover:bg-accent/5"
+                                        >
+                                            <Users class="w-5 h-5" />
+                                            <span>Users</span>
+                                        </a>
+
+                                        <a
+                                            href="/community"
+                                            class="flex items-center gap-3 p-2 rounded-md hover:bg-accent/5"
+                                        >
+                                            <MessageSquare class="w-5 h-5" />
+                                            <span>Community</span>
+                                        </a>
 
                                         <button
                                             onclick={handleLogout}
@@ -448,6 +494,22 @@
                                         </button>
                                     {:else}
                                         <!-- Not authenticated -->
+                                        <a
+                                            href="/users"
+                                            class="flex items-center gap-3 p-2 rounded-md hover:bg-accent/5"
+                                        >
+                                            <Users class="w-5 h-5" />
+                                            <span>Users</span>
+                                        </a>
+
+                                        <a
+                                            href="/community"
+                                            class="flex items-center gap-3 p-2 rounded-md hover:bg-accent/5"
+                                        >
+                                            <MessageSquare class="w-5 h-5" />
+                                            <span>Community</span>
+                                        </a>
+                                        <hr class="my-2 border-border" />
                                         <a
                                             href="/login"
                                             class="flex items-center gap-3 p-2 rounded-md hover:bg-accent/5"
@@ -471,7 +533,7 @@
                                 <div
                                     class="flex items-center gap-3 p-2"
                                 >
-                                    <ThemeToggle />
+                                    <ThemeToggle placement="top-start" />
                                     <span>Theme</span>
                                 </div>
                             </div>
@@ -490,8 +552,8 @@
         transform: translateY(-100%);
         opacity: 0;
         transition:
-            transform 260ms cubic-bezier(0.2, 0.9, 0.2, 1),
-            opacity 180ms linear;
+            transform 400ms cubic-bezier(0.16, 1, 0.3, 1),
+            opacity 300ms ease;
         will-change: transform, opacity;
         left: 0;
         right: 0;

@@ -82,7 +82,7 @@
 				</div>
 
 				{#if availableGenres.length > 0}
-					<div class="relative flex-shrink-0">
+					<div class="relative flex-shrink-0 w-max">
 						<button
 							class="dropdown-trigger"
 							onclick={() => (dropdownOpen = !dropdownOpen)}
@@ -219,7 +219,7 @@
 	}
 	.dropdown-panel {
 		position: absolute;
-		right: 0;
+		left: 0;
 		top: calc(100% + 0.5rem);
 		z-index: 50;
 		width: 14rem;
@@ -231,6 +231,12 @@
 			0 4px 16px -4px rgba(0, 0, 0, 0.15);
 		padding: 0.5rem;
 		animation: dropIn 0.15s ease;
+	}
+	@media (min-width: 640px) {
+		.dropdown-panel {
+			left: auto;
+			right: 0;
+		}
 	}
 	@keyframes dropIn {
 		from {
