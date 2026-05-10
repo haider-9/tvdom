@@ -12,7 +12,7 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"devDependencies": {
-		"@internationalized/date": "^3.10.0",
+		"@internationalized/date": "^3.12.1",
 		"@lucide/svelte": "^0.544.0",
 		"@sveltejs/adapter-auto": "^7.0.1",
 		"@sveltejs/kit": "^2.48.5",
@@ -21,7 +21,7 @@
 		"@tailwindcss/typography": "^0.5.19",
 		"autoprefixer": "^10.4.22",
 		"baseline-browser-mapping": "^2.10.21",
-		"bits-ui": "^2.14.4",
+		"bits-ui": "^2.18.1",
 		"postcss": "^8.5.6",
 		"svelte": "^5.43.8",
 		"svelte-check": "^4.3.4",

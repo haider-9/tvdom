@@ -1,88 +1,206 @@
 <script lang="ts">
-import MediaCard from '$lib/components/MediaCard.svelte';
-import { Button } from '$lib/components/ui/button';
-import { Tv, TrendingUp, Star, Calendar, ChevronRight, ChevronLeft } from 'lucide-svelte';
-import type { PageData } from './$types';
+	import MediaCard from "$lib/components/MediaCard.svelte";
+	import { Button } from "$lib/components/ui/button";
+	import {
+		Tv,
+		ChevronRight,
+		ChevronLeft,
+		ChevronDown,
+		Check,
+	} from "lucide-svelte";
+	import type { PageData } from "./$types";
+	import { ScrollArea } from "$lib/components/ui/scroll-area";
 
-let { data }: { data: PageData } = $props();
+	let { data }: { data: PageData } = $props();
+	let dropdownOpen = $state(false);
 
-const sections = [
-  { id: 'popular', label: 'Popular', icon: Tv },
-  { id: 'trending', label: 'Trending', icon: TrendingUp },
-  { id: 'top_rated', label: 'Top Rated', icon: Star },
-  { id: 'airing_today', label: 'Airing Today', icon: Calendar }
-];
+	const activeGenreName = $derived(
+		data.currentGenre
+			? (data.genres.find(
+					(g: { id: number; name: string }) =>
+						g.id === data.currentGenre,
+				)?.name ?? null)
+			: null,
+	);
+	const pageTitle = $derived(
+		activeGenreName ??
+			{
+				popular: "Popular",
+				trending: "Trending",
+				top_rated: "Top Rated",
+				airing_today: "Airing Today",
+			}[data.currentSection] ??
+			"Popular",
+	);
 
-const sectionTitle = sections.find(s => s.id === data.currentSection)?.label || 'Popular';
+	function genreHref(id: number | null) {
+		return id === null
+			? `/tv?section=${data.currentSection}&page=1`
+			: `/tv?genre=${id}&page=1`;
+	}
+	function pageHref(p: number) {
+		return data.currentGenre
+			? `/tv?genre=${data.currentGenre}&page=${p}`
+			: `/tv?section=${data.currentSection}&page=${p}`;
+	}
+	function close() {
+		dropdownOpen = false;
+	}
 </script>
 
+<svelte:window onkeydown={(e) => e.key === "Escape" && close()} />
+
 <svelte:head>
-	<title>TV Shows - TVDom</title>
-	<meta name="description" content="Browse popular, trending, top-rated, and currently airing TV shows. Find your next binge-worthy series powered by TMDB." />
-	<meta property="og:title" content="TV Shows - TVDom" />
-	<meta property="og:description" content="Browse popular, trending, top-rated, and currently airing TV shows. Find your next binge-worthy series." />
-	<meta property="og:url" content="https://tvdom.vercel.app/tv" />
-	<meta property="og:type" content="website" />
-	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:title" content="TV Shows - TVDom" />
-	<meta name="twitter:description" content="Browse popular, trending, top-rated, and currently airing TV shows." />
+	<title>{pageTitle} TV Shows - TVDom</title>
+	<meta
+		name="description"
+		content="Browse popular, trending, top-rated, and currently airing TV shows on TVDom."
+	/>
 	<link rel="canonical" href="https://tvdom.vercel.app/tv" />
 </svelte:head>
 
 <div class="min-h-screen bg-background">
-	<main class="container mx-auto px-4 md:px-8 py-10 md:py-14 space-y-10">
-		<!-- Page header -->
-		<section class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+	<main class="container mx-auto px-4 md:px-8 py-10 md:py-14 space-y-8">
+		<section
+			class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+		>
 			<div class="space-y-2">
-				<div class="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-					<Tv class="w-4 h-4" />
-					<span>Browse TV shows</span>
+				<div
+					class="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+				>
+					<Tv class="w-4 h-4" /><span>Browse TV shows</span>
 				</div>
-				<h1 class="text-3xl md:text-4xl font-semibold tracking-tight text-foreground">
-					{sectionTitle} TV Shows
+				<h1 class="text-3xl md:text-4xl font-semibold tracking-tight">
+					{pageTitle} TV Shows
 				</h1>
-				<p class="max-w-xl text-sm md:text-base text-muted-foreground">
-					Find something to binge from popular, trending, top rated and airing today.
+				<p class="max-w-xl text-sm text-muted-foreground">
+					Find something to binge from popular, trending, top rated
+					and airing today.
 				</p>
 			</div>
 
-			<!-- Section tabs -->
-		
+			{#if data.genres.length > 0}
+				<div class="relative flex-shrink-0">
+					<button
+						class="dropdown-trigger"
+						onclick={() => (dropdownOpen = !dropdownOpen)}
+					>
+						<Tv class="w-4 h-4 opacity-60" />
+						<span>{activeGenreName ?? "All Genres"}</span>
+						<ChevronDown
+							class="w-4 h-4 opacity-50 transition-transform duration-200 {dropdownOpen
+								? 'rotate-180'
+								: ''}"
+						/>
+					</button>
+
+					{#if dropdownOpen}
+						<button
+							class="fixed inset-0 z-40"
+							onclick={close}
+							aria-label="Close"
+							tabindex="-1"
+						></button>
+						<div class="dropdown-panel">
+							<p class="dropdown-label">Genre</p>
+							<div class="dropdown-list">
+								<ScrollArea class="h-[200px] overflow-hidden">
+									<a
+										href={genreHref(null)}
+										onclick={close}
+										class="dropdown-item {!data.currentGenre
+											? 'active'
+											: ''}"
+									>
+										{#if !data.currentGenre}<Check
+												class="w-3.5 h-3.5 shrink-0"
+											/>{:else}<span
+												class="w-3.5 h-3.5 shrink-0"
+											></span>{/if}
+										All
+									</a>
+
+									{#each data.genres as g}
+										<a
+											href={genreHref(g.id)}
+											onclick={close}
+											class="dropdown-item {data.currentGenre ===
+											g.id
+												? 'active'
+												: ''}"
+										>
+											{#if data.currentGenre === g.id}<Check
+													class="w-3.5 h-3.5 shrink-0"
+												/>{:else}<span
+													class="w-3.5 h-3.5 shrink-0"
+												></span>{/if}
+											{g.name}
+										</a>
+									{/each}
+								</ScrollArea>
+							</div>
+						</div>
+					{/if}
+				</div>
+			{/if}
 		</section>
 
-		<!-- Results grid -->
-		<section class="space-y-6">
-			<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-				{#each data.shows as show}
-					<MediaCard media={show} type="tv" />
-				{/each}
+		{#if activeGenreName}
+			<div class="flex items-center gap-2 text-sm">
+				<span class="text-muted-foreground">Filtered by:</span>
+				<a
+					href={genreHref(null)}
+					class="px-3 py-1 rounded-full bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-colors"
+				>
+					{activeGenreName} ×
+				</a>
 			</div>
+		{/if}
+
+		<section class="space-y-6">
+			{#if data.shows.length > 0}
+				<div
+					class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"
+				>
+					{#each data.shows as show (show.id)}
+						<MediaCard media={show} type="tv" />
+					{/each}
+				</div>
+			{:else}
+				<div class="text-center py-16">
+					<Tv
+						class="w-16 h-16 mx-auto mb-4 text-muted-foreground/30"
+					/>
+					<p class="text-muted-foreground">
+						No shows found for this genre.
+					</p>
+				</div>
+			{/if}
 
 			{#if data.totalPages > 1}
-				<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-4 border-t border-border/60">
-					<p class="text-xs md:text-sm text-muted-foreground">
-						Page {data.currentPage} of {Math.min(data.totalPages, 500)}
+				<div
+					class="flex items-center justify-between pt-4 border-t border-border/60"
+				>
+					<p class="text-sm text-muted-foreground">
+						Page {data.currentPage} of {Math.min(
+							data.totalPages,
+							500,
+						)}
 					</p>
-					<div class="flex justify-end items-center gap-3">
+					<div class="flex gap-3">
 						{#if data.currentPage > 1}
-							<a href={`/tv?section=${data.currentSection}&page=${data.currentPage - 1}`}>
-								<Button
-									variant="outline"
-									class="px-4 md:px-6"
-								>
-									<ChevronLeft/> Previous
-								</Button>
-							</a>
+							<a href={pageHref(data.currentPage - 1)}
+								><Button variant="outline"
+									><ChevronLeft /> Previous</Button
+								></a
+							>
 						{/if}
 						{#if data.currentPage < data.totalPages && data.currentPage < 500}
-							<a href={`/tv?section=${data.currentSection}&page=${data.currentPage + 1}`}>
-								<Button
-									variant="outline"
-									class="px-4 md:px-6 "
-								>
-									Next <ChevronRight/>
-								</Button>
-							</a>
+							<a href={pageHref(data.currentPage + 1)}
+								><Button variant="outline"
+									>Next <ChevronRight /></Button
+								></a
+							>
 						{/if}
 					</div>
 				</div>
@@ -92,5 +210,87 @@ const sectionTitle = sections.find(s => s.id === data.currentSection)?.label || 
 </div>
 
 <style>
-	/* Legacy horizontal scroll helpers left empty intentionally */
+	.dropdown-trigger {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1rem;
+		border-radius: 0.75rem;
+		border: 1.5px solid var(--border);
+		background: var(--card);
+		color: var(--foreground);
+		font-size: 0.875rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition:
+			border-color 0.15s,
+			box-shadow 0.15s;
+		font-family: inherit;
+		min-width: 10rem;
+		justify-content: space-between;
+	}
+	.dropdown-trigger:hover {
+		border-color: var(--primary);
+		box-shadow: 0 0 0 3px oklch(from var(--primary) l c h / 0.1);
+	}
+	.dropdown-panel {
+		position: absolute;
+		right: 0;
+		top: calc(100% + 0.5rem);
+		z-index: 50;
+		width: 14rem;
+		background: var(--card);
+		border: 1.5px solid var(--border);
+		border-radius: 1rem;
+		box-shadow:
+			0 20px 40px -8px oklch(from var(--primary) l c h / 0.15),
+			0 4px 16px -4px rgba(0, 0, 0, 0.15);
+		padding: 0.5rem;
+		animation: dropIn 0.15s ease;
+	}
+	@keyframes dropIn {
+		from {
+			opacity: 0;
+			transform: translateY(-6px) scale(0.97);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0) scale(1);
+		}
+	}
+	.dropdown-label {
+		font-size: 0.7rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--muted-foreground);
+		padding: 0.25rem 0.5rem 0.375rem;
+	}
+	.dropdown-list {
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+		max-height: 17rem;
+		overflow-y: auto;
+		scrollbar-width: thin;
+	}
+	.dropdown-item {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.45rem 0.6rem;
+		border-radius: 0.5rem;
+		font-size: 0.875rem;
+		color: var(--foreground);
+		text-decoration: none;
+		transition: background 0.12s;
+	}
+	.dropdown-item:hover {
+		background: color-mix(in oklch, var(--accent) 20%, transparent);
+	}
+	.dropdown-item.active {
+		background: var(--primary);
+		color: var(--primary-foreground);
+		font-weight: 600;
+	}
 </style>
