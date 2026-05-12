@@ -276,7 +276,7 @@
         </div>
 
         <div class="overflow-x-auto scrollbar-hide -mx-4 md:mx-0">
-          <div class="flex gap-16 px-4 md:px-0 pb-4">
+          <div class="flex gap-5 px-4 md:px-0 pb-4">
             {#each knownFor.slice(0, 10) as credit}
               <div class="shrink-0 w-[280px]">
                 <PersonMediaCard media={credit} type={credit.media_type} showCharacter={true} />
@@ -425,7 +425,7 @@
         </div>
 
         <div class="overflow-x-auto scrollbar-hide -mx-4 md:mx-0">
-          <div class="flex gap-16 px-4 md:px-0 pb-4">
+          <div class="flex gap-5 px-4 md:px-0 pb-4">
             {#each displayMovieCredits.slice(0, 20) as credit}
               <div class="shrink-0 w-[280px]">
                 <PersonMediaCard media={credit} type="movie" showCharacter={true} />
@@ -447,7 +447,7 @@
         </div>
 
         <div class="overflow-x-auto scrollbar-hide -mx-4 md:mx-0">
-          <div class="flex gap-16 px-4 md:px-0 pb-4">
+          <div class="flex gap-5 px-4 md:px-0 pb-4">
             {#each displayTvCredits.slice(0, 20) as credit}
               <div class="shrink-0 w-[280px]">
                 <PersonMediaCard media={credit} type="tv" showCharacter={true} />

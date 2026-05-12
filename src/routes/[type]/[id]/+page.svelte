@@ -360,7 +360,7 @@
 								{userRating ? `${userRating.rating}/10` : 'Rate'}
 							</Button>
 						</DropdownMenu.Trigger>
-						<DropdownMenu.Content class="w-48">
+						<DropdownMenu.Content class="w-48" side="bottom" align="start">
 							<DropdownMenu.Item class="font-medium text-xs text-muted-foreground">
 								{#snippet children()}
 									Rate this {mediaType}
@@ -751,7 +751,7 @@
 					</h2>
 				</div>
 				<div class="overflow-x-auto scrollbar-hide -mx-4 md:mx-0">
-					<div class="flex gap-16 px-4 md:px-0 pb-4">
+					<div class="flex gap-5 px-4 md:px-0 pb-4">
 						{#each similar.results.slice(0, 12) as item}
 							<div class="shrink-0 w-[280px]">
 								<MediaCard media={item} type={mediaType} />

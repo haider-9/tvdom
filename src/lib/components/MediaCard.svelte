@@ -76,7 +76,7 @@
 				<div class="absolute inset-x-0 bottom-0 p-3 sm:p-4 md:p-5 lg:p-6">
 					<div class="space-y-2 sm:space-y-3">
 						<div class="flex items-center gap-1.5 sm:gap-2 text-xs">
-							<Badge class="bg-white/10 backdrop-blur px-2 py-0.5 sm:px-3 sm:py-1 uppercase tracking-wide text-[0.65rem] sm:text-[0.7rem] md:text-xs">
+							<Badge class="bg-white/10 backdrop-blur px-2 py-0.5 sm:px-3 sm:py-1 uppercase tracking-wide text-white text-[0.65rem] sm:text-[0.7rem] md:text-xs">
 								{type}
 							</Badge>
 							{#if releaseDate}

@@ -10,7 +10,6 @@ const Content = DropdownMenuContent;
 const Item = DropdownMenuItem;
 const CheckboxItem = DropdownMenuPrimitive.CheckboxItem;
 const RadioItem = DropdownMenuPrimitive.RadioItem;
-const Label = DropdownMenuPrimitive.Label;
 const Separator = DropdownMenuSeparator;
 const Arrow = DropdownMenuPrimitive.Arrow;
 const Group = DropdownMenuPrimitive.Group;
@@ -26,7 +25,6 @@ export {
 	Item,
 	CheckboxItem,
 	RadioItem,
-	Label,
 	Separator,
 	Arrow,
 	Group,
@@ -40,7 +38,6 @@ export {
 	Item as DropdownMenuItem,
 	CheckboxItem as DropdownMenuCheckboxItem,
 	RadioItem as DropdownMenuRadioItem,
-	Label as DropdownMenuLabel,
 	Separator as DropdownMenuSeparator,
 	Trigger as DropdownMenuTrigger,
 	Group as DropdownMenuGroup,
