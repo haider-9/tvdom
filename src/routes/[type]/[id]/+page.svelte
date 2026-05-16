@@ -173,7 +173,7 @@
 
 <div class="min-h-screen">
 	<!-- Hero Section with Backdrop -->
-	<div class="relative h-[60vh] md:h-[70vh] w-full overflow-hidden">
+	<div class="relative h-[70vh] md:h-[80vh] w-full overflow-hidden">
 		{#if backdropUrl}
 			<img
 				src={backdropUrl}
